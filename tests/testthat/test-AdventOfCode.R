@@ -1,4 +1,8 @@
 library(testthat)
+# print(paste("From test-AdventOfCode.R working directory is ", getwd()))
+setwd("../../")
+# print(paste("After setwd working directory is ", getwd()))
+source("./R/AdventOfCode.R")
 testdata_folder <- file.path ("data","test_data")
 
 # Day 1 ------------------------------------------------------------------------
@@ -59,6 +63,10 @@ mlist <- gen_matrix_list(1:36, dim=3)
 m1 <- matrix(10:18, 3, 3, byrow=TRUE)
 m2 <- matrix(11:19, 3, 3, byrow=TRUE)
 test_that(" function tests existence of matrix m in mlist list of matricses", {
- expect_equal(matrix_in(m1, mlist), TRUE) 
- expect_equal(matrix_in(m2, mlist), FALSE) 
+ expect_equal(matrix_in( mlist, m1), TRUE) 
+ expect_equal(matrix_in(mlist, m2), FALSE) 
+} )
+test_that(" function gives position of matrix m in mlist list of matricses", {
+ expect_equal(matrix_which( mlist, m1), 2) 
+ expect_equal(matrix_which( mlist, m2), NA) 
 } )

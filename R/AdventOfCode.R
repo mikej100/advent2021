@@ -4,6 +4,14 @@ library(readr)
 library(purrr)
 library(stringr)
 library(usethis)
+library(logger)
+
+t <- tempfile()
+log_appender(appender_file("./log/log.txt"), index = 2)
+log_threshold(TRACE, index = 2)
+
+log_info("Starting AdventOfCode.R")
+log_trace("Starting AdventOfCode.R trace level")
 
 data_folder <- file.path("data")
 read_data <- function ( fname, fpath = data_folder) 
@@ -51,7 +59,7 @@ position_product1 <- function (x) {
   x <- move[ move$direction == "forward", ]$`sum(amount)`
   pp <- x * -z
 }
-answer2_1 <- position_product(course_data)
+answer2_1 <- position_product1(course_data)
 
 
 # Calculate position using rules according to task 2.
@@ -189,8 +197,16 @@ gen_matrix_list <- function (values, dim) {
 
 # Test whether matrix m is in mlist list of matrices. 
 # Returns a logical.
-matrix_in <- function (m, mlist) {
+matrix_in <- function (mlist, m) {
   any( map_lgl( mlist, ~ all(.x == m )))
+}
+
+# Find which matrix in mlist list of matrices matches given matrix m
+# Returns position of match in list, or NA if not found
+matrix_which <- function (mlist, m) {
+  result <- which( map_lgl( mlist, ~ all(.x == m )))
+  if (length(result) == 0) result <- NA
+  result
 }
 
 get_bingo_score <- function (bingo_raw, first_not_last = TRUE) {
@@ -209,9 +225,9 @@ get_bingo_score <- function (bingo_raw, first_not_last = TRUE) {
   
   # set the target, either first or last board with house
   if (first_not_last) {
-    target <- 1
+    target <- length(boards) - 1
   }  else {
-    target = length(boards)
+    target <- 0
   }
   
   # Set up identity vectors, vertical and horizontal.
@@ -223,10 +239,12 @@ get_bingo_score <- function (bingo_raw, first_not_last = TRUE) {
   threshold<- flag * dim
   
   boardsm <- boards
+  houses <- list()
   houses_seq <- list()
   last_draw <- NA
   for (draw in draws) {
     # flag element matching the draw
+    log_trace("Draw number {which(draws == draw)}, value {draw}")
     boardsm <- boardsm %>%
       map(~ map_dbl(.x, ~ if_else (.x == draw, .x + flag, .x))) %>%
       map (~ matrix( .x, nrow = dim, ncol = dim, byrow = TRUE ))
@@ -236,26 +254,42 @@ get_bingo_score <- function (bingo_raw, first_not_last = TRUE) {
     tv <- map (boardsm, ~ .x %*% id_v )
     houses <- c(boardsm [map_lgl(th, ~ any(.x > threshold))],
                 boardsm [map_lgl(tv, ~ any(.x > threshold))])
+    #log_trace("houses found {length(houses)}") 
+    # remove house board from boardsm
+    for (house in houses) {
+      log_trace('house found:
+      {str_c( str_pad(house[1, ], 5), collapse = " ")} 
+      {str_c( str_pad(house[2, ], 5), collapse = " ")} 
+      {str_c( str_pad(house[3, ], 5), collapse = " ")} 
+      {str_c( str_pad(house[4, ], 5), collapse = " ")} 
+      {str_c( str_pad(house[5, ], 5), collapse = " ")} 
+                ') 
+      if ( matrix_in( boardsm, house) ) {
+        boardsm <- boardsm[-matrix_which( boardsm, house)]
+        houses_seq[ length(houses_seq) + 1 ] <- house
+        log_trace (" house removed from boardsm")
+      } else {
+        log_trace (" board has two houses")
+      }
+    }
+    log_trace("total houses found {length(houses_seq)}") 
+    log_trace("boards left {length(boardsm)}") 
     
-    # Remove house boards from set being played
-#    gj==for (house in houses) {
-#      map_lgl(houses_seq), ~ all(.x == house)
-#        if 
-#      }
-#  }
     
-    # test whether matrix m is in mlist list of matrices.
-    if (length(houses) >= target) {
+    if (length(boardsm) == target) {
       last_draw <- draw
       break
     }
   }
   
   # Calculate the 'score'.
-  sum_unmarked <- map_dbl( houses[[1]], ~ map_dbl(.x, ~ if_else(.x <flag, .x, 0))) %>%
+  sum_unmarked <- map_dbl(
+    houses[[1]], ~ map_dbl(.x, ~ if_else(.x < flag, .x, 0))) %>%
     sum(na.rm = TRUE)
   score <- last_draw * sum_unmarked
 }
 
 bingo_data <- read_data("day04_bingo.txt")
+
 # answer4_1 <- get_bingo_score(bingo_data)
+answer4_2 <- get_bingo_score(bingo_data, first_not_last = FALSE)
