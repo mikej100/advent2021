@@ -1,10 +1,13 @@
 library(testthat)
 # print(paste("From test-AdventOfCode.R working directory is ", getwd()))
-setwd("../../")
+ setwd("../../")
 # print(paste("After setwd working directory is ", getwd()))
 source("./R/AdventOfCode.R")
 testdata_folder <- file.path ("data","test_data")
 
+# Set test level, 1 shallow, deeper, etc.
+test_level <- 2
+log_threshold(DEBUG, index = 2)
 # Day 1 ------------------------------------------------------------------------
 test_depth = c(199, 200, 208, 210, 200, 207, 240, 269, 260,263)
 test_that("Depth calculations for 1 Dec task 1", {
@@ -46,17 +49,19 @@ test_that("life support from diagnostic data", {
 
 
 # Day 4 ------------------------------------------------------------------------
-test_bingo <-  read_data("test_day04_bingo.txt", fpath = testdata_folder) 
-#bingo <- read_data("day04_bingo.txt")
+test_bingo <-  read_data("test-day04_bingo.txt", fpath = testdata_folder) 
+bingo <- read_data("day04_bingo.txt")
 
 test_that("finds first bingo board and calculates score", {
-  expect_equal( get_bingo_score(test_bingo), 4512)
-  expect_equal( get_bingo_score(bingo_data), 14093)
+  expect_equal( get_first_bingo_score(test_bingo), 4512)
+  skip_if (test_level < 2)
+  expect_equal( get_first_bingo_score(bingo_data), 14093)
 })
 
 test_that("finds last bingo board and calculates score", {
-  expect_equal( get_bingo_score(test_bingo, first_not_last = FALSE), 1924)
-#  expect_equal( get_bingo_score(bingo_data), 14093)
+  expect_equal( get_last_bingo_score(test_bingo), 1924)
+  skip_if (test_level < 2)
+  expect_equal( get_last_bingo_score(bingo_data), 17388)
 })
 
 mlist <- gen_matrix_list(1:36, dim=3)
@@ -70,3 +75,6 @@ test_that(" function gives position of matrix m in mlist list of matricses", {
  expect_equal(matrix_which( mlist, m1), 2) 
  expect_equal(matrix_which( mlist, m2), NA) 
 } )
+
+# ------------------------------------------------------------------------------
+# Day 5

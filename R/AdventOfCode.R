@@ -209,6 +209,11 @@ matrix_which <- function (mlist, m) {
   result
 }
 
+get_first_bingo_score <- function (bingo_raw) get_bingo_score(bingo_raw)
+
+get_last_bingo_score <- function (bingo_raw) 
+  get_bingo_score(bingo_raw, first_not_last = FALSE)
+
 get_bingo_score <- function (bingo_raw, first_not_last = TRUE) {
   draws <- as.numeric( str_split( bingo_raw[[1]], ",", simplify = TRUE) )
   
@@ -240,7 +245,6 @@ get_bingo_score <- function (bingo_raw, first_not_last = TRUE) {
   
   boardsm <- boards
   houses <- list()
-  houses_seq <- list()
   last_draw <- NA
   for (draw in draws) {
     # flag element matching the draw
@@ -254,25 +258,28 @@ get_bingo_score <- function (bingo_raw, first_not_last = TRUE) {
     tv <- map (boardsm, ~ .x %*% id_v )
     houses <- c(boardsm [map_lgl(th, ~ any(.x > threshold))],
                 boardsm [map_lgl(tv, ~ any(.x > threshold))])
-    #log_trace("houses found {length(houses)}") 
     # remove house board from boardsm
     for (house in houses) {
+      format_row <- function (matrix, row)
+        str_c( str_pad( matrix[ row, ], 5), collapse = " ")
+      
+                                          
       log_trace('house found:
-      {str_c( str_pad(house[1, ], 5), collapse = " ")} 
-      {str_c( str_pad(house[2, ], 5), collapse = " ")} 
-      {str_c( str_pad(house[3, ], 5), collapse = " ")} 
-      {str_c( str_pad(house[4, ], 5), collapse = " ")} 
-      {str_c( str_pad(house[5, ], 5), collapse = " ")} 
+     {format_row(house, 1)} 
+     {format_row(house, 2)} 
+     {format_row(house, 3)} 
+     {format_row(house, 4)} 
+     {format_row(house, 5)} 
                 ') 
+      # Check that board is still in boardsm, it may have been removed
+      # if it has house in both a row and column.
       if ( matrix_in( boardsm, house) ) {
         boardsm <- boardsm[-matrix_which( boardsm, house)]
-        houses_seq[ length(houses_seq) + 1 ] <- house
         log_trace (" house removed from boardsm")
       } else {
         log_trace (" board has two houses")
       }
     }
-    log_trace("total houses found {length(houses_seq)}") 
     log_trace("boards left {length(boardsm)}") 
     
     
@@ -292,4 +299,4 @@ get_bingo_score <- function (bingo_raw, first_not_last = TRUE) {
 bingo_data <- read_data("day04_bingo.txt")
 
 # answer4_1 <- get_bingo_score(bingo_data)
-answer4_2 <- get_bingo_score(bingo_data, first_not_last = FALSE)
+# answer4_2 <- get_bingo_score(bingo_data, first_not_last = FALSE)
