@@ -8,7 +8,7 @@ library(logger)
 
 t <- tempfile()
 log_appender(appender_file("./log/log.txt"), index = 2)
-log_threshold(TRACE, index = 2)
+# log_threshold(TRACE, index = 2)
 
 log_info("Starting AdventOfCode.R")
 log_trace("Starting AdventOfCode.R trace level")
@@ -300,3 +300,104 @@ bingo_data <- read_data("day04_bingo.txt")
 
 # answer4_1 <- get_bingo_score(bingo_data)
 # answer4_2 <- get_bingo_score(bingo_data, first_not_last = FALSE)
+
+# ------------------------------------------------------------------------------
+# Day 5
+
+# Set up functions to extract x and y coordinates from raw data line.
+get_match <- function (txt, pattern) {
+  result <- function (txt) as.numeric(str_match(txt, pattern )[2])
+}
+fx1 <- get_match(txt, "^(\\d+),")
+fy1 <- get_match(txt, "^\\d+,(\\d+)")
+fx2 <- get_match(txt, "-> (\\d+)")
+fy2 <- get_match(txt, "-> \\d+,(\\d+)")
+
+# Build coordinates on a line
+# mode is either 'vh' for vertical and horizontal lines only, 
+# or 'vhd' which includes diagonals as well.
+# Returns a dataframe of x, y coordinates
+# 
+get_coords <- function (v, mode) {
+  log_debug("v: {v}")
+  coords_v = data.frame()
+  x1 <- fx1(v)
+  x2 <- fx2(v)
+  y1 <- fy1(v)
+  y2 <- fy2(v)
+  if (x1 == x2) {
+    x <- map_dbl(y1:y2, ~ x1)
+    y <- map_dbl(y1:y2, ~ .x)
+    coords_v <- data.frame (x, y)
+  }
+  if (y1 == y2) {
+    x <- map_dbl (x1:x2, ~ .x)
+    y <- map_dbl(x1:x2, ~ y1)
+    coords_v <- data.frame (x, y)
+  }
+  if (  abs(x1 - x2) == abs(y1 - y2) && mode == "vhd") {
+    x <- map_dbl (x1:x2, ~ .x)
+    y <- map_dbl (y1:y2, ~ .x)
+    coords_v <- data.frame (x, y)
+  }
+  coords_v
+} 
+
+# Generate# list of co-ordinate pairs for each line
+# returns list of (x,y) coordinates.
+# get_coords <- function (v) {
+#   log_debug("v: {v}")
+#   for (x in fx1(v):fx2(v) ) {
+#     for (y in fy1(v):fy2(v) ) {
+#       log_debug("Coords: {x}, {y}")
+#       coords[[length(coords) + 1]] <- c(x,y)
+#       log_debug('Length of coords: {length(coords)}')
+#     }}
+#   coords
+#   }
+
+get_busy_coord_count_vh <- function (vents_raw) {
+  get_busy_coord_count (vents_raw, mode="vh")
+}
+
+get_busy_coord_count_vhd <- function (vents_raw) {
+  get_busy_coord_count (vents_raw, mode="vhd")
+}
+
+# Performance improvement options
+#   create coordinate pair try check count, if already count > 1 then discard it
+get_busy_coord_count <- function (vents_raw, mode = "vh" ) {
+  coords <- data.frame()
+  coords_v <- data.frame()
+  for (v in vents_raw) {
+    log_trace("Vent {v}, ends {str_c(
+            fx1(v), fy1(v), fx2(v), fy2(v), collape=',')}")
+    coords_v <- get_coords(v, mode)
+    if ( length(coords_v) > 1) {
+      coords <- rbind(coords, coords_v)
+    }
+  }
+  
+  busy_coords <- coords %>%
+    group_by(x, y) %>%
+    summarize(n()) %>%
+    filter (`n()` > 1)
+  
+  busy_coord_count <- length( busy_coords[[1]])
+}
+
+
+# ------------------------------------------------------------------------------
+# Day 6
+# 
+# Logic
+# Operations on each day
+#   new_count <- count fish at zero 
+#   decrement every fish, moving 0 -> 6
+#   create new_count new fish value 8
+# Aggregate all the fish at the same point in the cycle
+#   sum fish at each point in the cycle 0 to 7
+#   operation for each day
+#     new_count <- count fish in zero 
+#     shift the counts down one
+#     set 8 <- new_count 

@@ -1,13 +1,13 @@
 library(testthat)
 # print(paste("From test-AdventOfCode.R working directory is ", getwd()))
- setwd("../../")
+# setwd("../../")
 # print(paste("After setwd working directory is ", getwd()))
 source("./R/AdventOfCode.R")
 testdata_folder <- file.path ("data","test_data")
 
 # Set test level, 1 shallow, deeper, etc.
 test_level <- 2
-log_threshold(DEBUG, index = 2)
+log_threshold(INFO, index = 2)
 # Day 1 ------------------------------------------------------------------------
 test_depth = c(199, 200, 208, 210, 200, 207, 240, 269, 260,263)
 test_that("Depth calculations for 1 Dec task 1", {
@@ -78,3 +78,10 @@ test_that(" function gives position of matrix m in mlist list of matricses", {
 
 # ------------------------------------------------------------------------------
 # Day 5
+test_vents <-  read_data("test-day05_vents.txt", fpath = testdata_folder) 
+vents_data <- read_data("day05_vents.txt")
+
+test_that(" find number of coordinate pairs on more than one vent line", {
+  expect_equal (get_busy_coord_count( test_vents), 5)  
+  expect_equal (get_busy_coord_count( vents_data), 4873)  
+} )
