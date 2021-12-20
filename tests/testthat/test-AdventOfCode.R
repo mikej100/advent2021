@@ -84,14 +84,23 @@ vents_data <- read_data("day05_vents.txt")
 
 test_that(" count points on more than one vertical or horizontal line", {
   expect_equal (get_busy_coord_count_vh( test_vents), 5)  
-  expect_equal (get_busy_coord_count( vents_data), 4873)  
+  expect_equal (get_busy_coord_count_vh( vents_data), 4873)  
 } )
 
-  test_that(" count points on >1 vertical, horizontal or diagnoal line", {
-  expect_equal (get_busy_coord_count_vh( test_vents), 5)  
-  expect_equal (get_busy_coord_count( vents_data), 4873)  
-} )
-test_that(" count points on more than one vertical or horizontal line", {
+test_that(" count points on >1 vertical, horizontal or diagnoal line", {
   expect_equal (get_busy_coord_count_vhd( test_vents), 12)  
   expect_equal (get_busy_coord_count_vhd( vents_data), 19472)  
+} )
+
+
+# ------------------------------------------------------------------------------
+# Day 6
+test_fish_data <- "3,4,3,1,2"
+fish_data <- read_data("day06_fish.txt")
+
+
+test_that(" fish reproduction calculation", {
+  expect_equal (total_fish_after_n_days( test_fish_data, 18), 26)  
+  expect_equal (total_fish_after_n_days( test_fish_data, 80), 5934)  
+  expect_equal (total_fish_after_n_days( fish_data, 80), 343441)  
 } )

@@ -400,9 +400,46 @@ get_busy_coord_count <- function (vents_raw, mode = "vh" ) {
 #   new_count <- count fish at zero 
 #   decrement every fish, moving 0 -> 6
 #   create new_count new fish value 8
-# Aggregate all the fish at the same point in the cycle
-#   sum fish at each point in the cycle 0 to 7
+# Implementation approach:
+#   Aggregate all the fish at the same point in the cycle
+#   sum fish at each point in the cycle 0
 #   operation for each day
 #     new_count <- count fish in zero 
 #     shift the counts down one
 #     set 8 <- new_count 
+# map this to 1-based vector array
+#   Aggregate the count of fish into vector 1:9
+#   f1 <- value of fish[1]
+#   shift counts down one, adding value of old fish[1] to new fish[7]
+#   set fish[9] to f1
+
+# Prepare fish data by setting up
+# vector fish holds the count of fish at each cycle. fish[1] is at cycle 0
+prepare_fish <- function (fish_data_raw) {
+  fish_data <- as.numeric( str_split( fish_data_raw, ",")[[1]])
+  fish <- rep(0, 9)
+  for ( i in seq_along(fish_data)) {
+    fish[fish_data[i] ] <- fish[ fish_data[i] ] + 1
+  }
+  fish
+}
+# age the fish one day
+age_one_day <- function (f) {
+  f1 <- f[1]
+  f <- lead(f)
+  f[7] <- f[7] + f1
+  f[9] <- f1
+  f
+}
+
+age_n_days <- function (f, n) {
+  for (i in 1:(n-1) ) {
+    f <- age_one_day(f)
+  }
+  f
+}
+
+total_fish_after_n_days <- function(f_data, n) {
+  fish <- prepare_fish(f_data)
+  sum( age_n_days( fish, n) )
+}
