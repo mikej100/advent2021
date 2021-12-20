@@ -100,7 +100,10 @@ fish_data <- read_data("day06_fish.txt")
 
 
 test_that(" fish reproduction calculation", {
-  expect_equal (total_fish_after_n_days( test_fish_data, 18), 26)  
-  expect_equal (total_fish_after_n_days( test_fish_data, 80), 5934)  
-  expect_equal (total_fish_after_n_days( fish_data, 80), 343441)  
+  expect_equal (total_fish_after_n_days( test_fish_data,  18), 26)  
+  expect_equal (total_fish_after_n_days( test_fish_data,  80), 5934)  
+  expect_equal (total_fish_after_n_days( fish_data,       80), 343441)  
+# task 2 
+  expect_equal (total_fish_after_n_days( test_fish_data, 256), 26984457539 ) 
+  expect_equal (total_fish_after_n_days( fish_data,      256), 1569108373832 ) 
 } )
