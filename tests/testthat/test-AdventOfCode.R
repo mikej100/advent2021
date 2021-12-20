@@ -107,3 +107,15 @@ test_that(" fish reproduction calculation", {
   expect_equal (total_fish_after_n_days( test_fish_data, 256), 26984457539 ) 
   expect_equal (total_fish_after_n_days( fish_data,      256), 1569108373832 ) 
 } )
+
+
+# ------------------------------------------------------------------------------
+# Day 7
+test_positions_data <- "16,1,2,0,4,2,7,1,2,14"
+positions_data <- read_data("day07_crabs.txt")
+
+
+test_that("fuel for optimal alignment", {
+  expect_equal (fuel_for_optimal_alignment( test_positions_data), 37) 
+  expect_equal (fuel_for_optimal_alignment( positions_data), 336701) 
+})

@@ -443,3 +443,25 @@ total_fish_after_n_days <- function(f_data, n) {
   fish <- prepare_fish(f_data)
   sum( age_n_days( fish, n) )
 }
+
+# ------------------------------------------------------------------------------
+# Day 7
+# 
+# Logic
+# let a be candidate alignment position
+# cost of misalignment <- sum over points (abs(pi - a) 
+# which is least absolute deviation regression, for which there is not
+# computational solution. So use R optimise function.
+
+fuel_for_optimal_alignment <- function (position_data_raw) {
+  # wrangle input data to vector.
+  position <- as.numeric( str_split(position_data_raw, ",")[[1]] )
+  
+  # abs. difference cost model, a alignment position, p starting position vector
+  l1_cost <- function(a, v) {  sum(abs(v-a))}
+  
+  optimum <- optimise( l1_cost, lower = 1, upper = mean(position), 4, position) 
+  
+  # Round optimum and use to calculate cost.
+  cost <- l1_cost( round( optimum$minimum ), position)
+}
