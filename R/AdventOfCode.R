@@ -209,12 +209,18 @@ matrix_which <- function (mlist, m) {
   result
 }
 
-get_first_bingo_score <- function (bingo_raw) get_bingo_score(bingo_raw)
+get_bingo_score_first <- function (bingo_raw) 
+  get_bingo_score(bingo_raw, last = FALSE)
 
-get_last_bingo_score <- function (bingo_raw) 
-  get_bingo_score(bingo_raw, first_not_last = FALSE)
+get_bingo_score_last <- function (bingo_raw) 
+  get_bingo_score(bingo_raw, last = TRUE)
 
-get_bingo_score <- function (bingo_raw, first_not_last = TRUE) {
+# Run bingo draws against bingo boards specified in bingo_raw data,
+# for first or last board with home calculate the 'score' 
+# using algorithm provided.
+# Returns the score value.
+
+get_bingo_score <- function (bingo_raw, last = FALSE) {
   draws <- as.numeric( str_split( bingo_raw[[1]], ",", simplify = TRUE) )
   
   board_raw <- tail(bingo_raw, -1)
@@ -229,10 +235,10 @@ get_bingo_score <- function (bingo_raw, first_not_last = TRUE) {
   boards <- gen_matrix_list(b2, dim=dim)
   
   # set the target, either first or last board with house
-  if (first_not_last) {
-    target <- length(boards) - 1
-  }  else {
+  if (last) {
     target <- 0
+  }  else {
+    target <- length(boards) - 1
   }
   
   # Set up identity vectors, vertical and horizontal.
@@ -296,7 +302,6 @@ get_bingo_score <- function (bingo_raw, first_not_last = TRUE) {
   score <- last_draw * sum_unmarked
 }
 
-bingo_data <- read_data("day04_bingo.txt")
 
 # answer4_1 <- get_bingo_score(bingo_data)
 # answer4_2 <- get_bingo_score(bingo_data, first_not_last = FALSE)

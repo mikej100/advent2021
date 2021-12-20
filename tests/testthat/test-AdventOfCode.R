@@ -50,18 +50,18 @@ test_that("life support from diagnostic data", {
 
 # Day 4 ------------------------------------------------------------------------
 test_bingo <-  read_data("test-day04_bingo.txt", fpath = testdata_folder) 
-bingo <- read_data("day04_bingo.txt")
+bingo_data <- read_data("day04_bingo.txt")
 
 test_that("finds first bingo board and calculates score", {
-  expect_equal( get_first_bingo_score(test_bingo), 4512)
+  expect_equal( get_bingo_score_first(test_bingo), 4512)
   skip_if (test_level < 2)
-  expect_equal( get_first_bingo_score(bingo_data), 14093)
+  expect_equal( get_bingo_score_first(bingo_data), 14093)
 })
 
 test_that("finds last bingo board and calculates score", {
-  expect_equal( get_last_bingo_score(test_bingo), 1924)
+  expect_equal( get_bingo_score_last(test_bingo), 1924)
   skip_if (test_level < 2)
-  expect_equal( get_last_bingo_score(bingo_data), 17388)
+  expect_equal( get_bingo_score_last(bingo_data), 17388)
 })
 
 mlist <- gen_matrix_list(1:36, dim=3)
@@ -81,7 +81,17 @@ test_that(" function gives position of matrix m in mlist list of matricses", {
 test_vents <-  read_data("test-day05_vents.txt", fpath = testdata_folder) 
 vents_data <- read_data("day05_vents.txt")
 
-test_that(" find number of coordinate pairs on more than one vent line", {
-  expect_equal (get_busy_coord_count( test_vents), 5)  
+
+test_that(" count points on more than one vertical or horizontal line", {
+  expect_equal (get_busy_coord_count_vh( test_vents), 5)  
   expect_equal (get_busy_coord_count( vents_data), 4873)  
+} )
+
+  test_that(" count points on >1 vertical, horizontal or diagnoal line", {
+  expect_equal (get_busy_coord_count_vh( test_vents), 5)  
+  expect_equal (get_busy_coord_count( vents_data), 4873)  
+} )
+test_that(" count points on more than one vertical or horizontal line", {
+  expect_equal (get_busy_coord_count_vhd( test_vents), 12)  
+  expect_equal (get_busy_coord_count_vhd( vents_data), 19472)  
 } )
