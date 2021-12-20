@@ -115,7 +115,12 @@ test_positions_data <- "16,1,2,0,4,2,7,1,2,14"
 positions_data <- read_data("day07_crabs.txt")
 
 
-test_that("fuel for optimal alignment", {
-  expect_equal (fuel_for_optimal_alignment( test_positions_data), 37) 
-  expect_equal (fuel_for_optimal_alignment( positions_data), 336701) 
+test_that("fuel for optimal alignment with l1 metric", {
+  expect_equal (fuel_for_optimal_alignment_l1( test_positions_data), 37) 
+  expect_equal (fuel_for_optimal_alignment_l1( positions_data), 336701) 
+})
+
+test_that("fuel for optimal alignment with increment sum metric", {
+  expect_equal (fuel_for_optimal_alignment_incr( test_positions_data), 168 ) 
+  expect_equal (fuel_for_optimal_alignment_incr( positions_data), 95167302) 
 })

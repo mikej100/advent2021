@@ -453,15 +453,38 @@ total_fish_after_n_days <- function(f_data, n) {
 # which is least absolute deviation regression, for which there is not
 # computational solution. So use R optimise function.
 
-fuel_for_optimal_alignment <- function (position_data_raw) {
+# Task 2, cost model is cost <- 
+  
+# abs. difference cost model, a alignment position, p starting position vector
+l1_cost <- function(a, v) {  sum(abs(v-a)) }
+
+# incremental difference cost model, a alignment position, v starting position vector
+# incr_sum is sum of digits leading up to given number.
+incr_sum <- function(x) (x+1)*x/2
+incr_cost <- function(a, v) { sum( incr_sum(abs(v-a)) )}
+
+
+fuel_for_optimal_alignment_l1 <- function (position_data_raw) 
+    fuel_for_optimal_alignment(position_data_raw, cost_model="l1")
+
+fuel_for_optimal_alignment_incr <- function (position_data_raw) 
+    fuel_for_optimal_alignment(position_data_raw, cost_model="incr")
+
+
+fuel_for_optimal_alignment <- function (position_data_raw, cost_model="l1") {
   # wrangle input data to vector.
   position <- as.numeric( str_split(position_data_raw, ",")[[1]] )
   
-  # abs. difference cost model, a alignment position, p starting position vector
-  l1_cost <- function(a, v) {  sum(abs(v-a))}
+  if (cost_model == "incr") {
+    cost_function <- incr_cost
+  } else {
+    cost_function <- l1_cost
+  }
   
-  optimum <- optimise( l1_cost, lower = 1, upper = mean(position), 4, position) 
+  optimum <- optimise( 
+    cost_function, lower = 1, upper = mean(position), 4, position
+    ) 
   
   # Round optimum and use to calculate cost.
-  cost <- l1_cost( round( optimum$minimum ), position)
+  cost <- cost_function( round( optimum$minimum ), position)
 }
