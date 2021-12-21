@@ -488,3 +488,35 @@ fuel_for_optimal_alignment <- function (position_data_raw, cost_model="l1") {
   # Round optimum and use to calculate cost.
   cost <- cost_function( round( optimum$minimum ), position)
 }
+
+
+# ------------------------------------------------------------------------------
+# Day 8
+# 
+# numbers with unique number of segments
+# 1 - 2 segments
+# 4 - 4
+# 7 - 3
+# 8 - 7
+# 
+# task 1, find the number of  output digits which are in 1, 4, 7, 8
+# map digits to number of segments lit
+# count digits which have number of segments in 2, 4, 3 and 7
+
+count_digit_length_matches <- function(digits_raw) {
+  # wrangle the data
+  data1 <- digits_raw %>%
+    str_split("\\|") %>%
+    transpose()
+  
+  digits<- unlist(data1[[2]])
+  
+  # count number of string length matches
+  digit_counts <- digits %>%
+    str_split(" " ) %>%
+    map( ~ str_length(.)) %>%
+    map( ~ . %in% c( 2, 4, 3, 7 )) %>%
+    map( ~ sum(.) )
+  
+  total_counts <- sum(unlist(digit_counts))
+}

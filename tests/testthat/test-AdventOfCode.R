@@ -124,3 +124,15 @@ test_that("fuel for optimal alignment with increment sum metric", {
   expect_equal (fuel_for_optimal_alignment_incr( test_positions_data), 168 ) 
   expect_equal (fuel_for_optimal_alignment_incr( positions_data), 95167302) 
 })
+
+
+# ------------------------------------------------------------------------------
+# Day 8
+test_digits_data <-  read_data("test-day08_digits.txt", fpath = testdata_folder) 
+digits_data <-  read_data("day08_digits.txt") 
+#digits_data <- read_data("day08_digits.txt")
+
+test_that("count number of digits which have segment count 2, 3, 4 or 7", {
+  expect_equal (count_digit_length_matches( test_digits_data), 26 ) 
+  expect_equal (count_digit_length_matches( digits_data), 440 ) 
+})
