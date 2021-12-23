@@ -1,8 +1,4 @@
-library(dplyr)
-library(tidyr)
-library(readr)
-library(purrr)
-library(stringr)
+library(tidyverse)
 library(usethis)
 library(logger)
 
@@ -463,14 +459,6 @@ l1_cost <- function(a, v) {  sum(abs(v-a)) }
 incr_sum <- function(x) (x+1)*x/2
 incr_cost <- function(a, v) { sum( incr_sum(abs(v-a)) )}
 
-
-fuel_for_optimal_alignment_l1 <- function (position_data_raw) 
-    fuel_for_optimal_alignment(position_data_raw, cost_model="l1")
-
-fuel_for_optimal_alignment_incr <- function (position_data_raw) 
-    fuel_for_optimal_alignment(position_data_raw, cost_model="incr")
-
-
 fuel_for_optimal_alignment <- function (position_data_raw, cost_model="l1") {
   # wrangle input data to vector.
   position <- as.numeric( str_split(position_data_raw, ",")[[1]] )
@@ -493,6 +481,7 @@ fuel_for_optimal_alignment <- function (position_data_raw, cost_model="l1") {
 # ------------------------------------------------------------------------------
 # Day 8
 # 
+# Task 1
 # numbers with unique number of segments
 # 1 - 2 segments
 # 4 - 4
@@ -502,7 +491,23 @@ fuel_for_optimal_alignment <- function (position_data_raw, cost_model="l1") {
 # task 1, find the number of  output digits which are in 1, 4, 7, 8
 # map digits to number of segments lit
 # count digits which have number of segments in 2, 4, 3 and 7
-
+#
+# Task two
+# Deduce mappings for each display cell.
+#
+# a b c d e f g  N L Solve by
+#     .     .    1 2 Unique length
+#   . . .   .    4 4 Unique length
+# .   .     .    7 3 Unique length    
+# .   .     .    8 7 Unique length    
+# .   . .   . .  3 5 Shares 2 segments with Digit 1
+# . .   . . . .  6 6 Shares 1 segments with Digit 1
+# . . . .   . .  9 6 Shares 5 segments with Digit 3
+# . . .   . . .  0 6 Remaining sixer          
+# .   . . .   .  2 5 Shares 4 segments with Digit 6
+# . .   .   . .  5 5 Last remaining digit
+#
+# Task 1
 count_digit_length_matches <- function(digits_raw) {
   # wrangle the data
   data1 <- digits_raw %>%
@@ -520,3 +525,101 @@ count_digit_length_matches <- function(digits_raw) {
   
   total_counts <- sum(unlist(digit_counts))
 }
+
+# For task 2
+#
+# function shared_segments
+#  pass two words as chr[1]
+#  return number of shared letters
+shared <- function (a, b) {
+  aa <- unlist(str_split(a, ""))
+  bb <- unlist(str_split(b, ""))
+  aa %>%
+    map_lgl(~ . %in% bb) %>%
+    sum()
+}
+
+patterns_list <- data1[[1]] %>%
+  str_split(" ")
+
+
+# Find the mapping of set of unique patterns to digits they represent.
+# Return data frame of patterns and the digit represented.
+get_mapped_patterns <- function (patterns) {
+  patterns_df <- head( tibble(segs=patterns), -1)
+  
+  # Digits 1, 4, 7 and 9 assigned based on unique lengths.
+  pp <- patterns_df %>%
+    mutate( len = str_length(segs)) %>% 
+    mutate( digit = case_when (
+      len == 2 ~ 1
+      ,len == 4 ~ 4
+      ,len == 3 ~ 7
+      ,len == 7 ~ 8
+    )
+    )
+  
+  # Digits 6, 9 and 0 are sixers, they have segs length 6.
+  sixers <- pp %>%
+    filter(len ==6)
+  
+  # Digits 2, 3 and 5 are fivers, they have segs length 5.
+  fivers <- pp %>%
+    filter(len == 5)
+  
+  # Digit 3 is only fiver which shares two segments with Digit 1 (whose segs has length 2)
+  d1_segs <- pp[pp$len==2,'segs']
+  d3_row <- fivers [map_lgl(fivers$segs,~ shared(., d1_segs) == 2 ),]
+  pp[pp$segs == d3_row$segs, 'digit' ] <- 3 
+  
+  # Digit 6 is only sixer which shares 1 segment with Digit 1
+  d6_row <- sixers [map_lgl(sixers$segs,~ shared(., d1_segs) == 1 ),]
+  pp[pp$segs == d6_row$segs, 'digit' ] <- 6 
+  
+  # Digit 9 is only sixer which shares 4 segment with Digit 4
+  d4_segs <- pp[pp$len==4,'segs']
+  d6_row <- sixers [map_lgl(sixers$segs,~ shared(., d4_segs) == 4 ),]
+  pp[pp$segs == d6_row$segs, 'digit' ] <- 9 
+  
+  # Digit 0 is the remaining sixer.
+  d0_row <- subset(pp, len ==6 & is.na(digit))
+  pp[pp$segs == d0_row$segs, 'digit' ] <- 0
+  
+  # Digit 2 is the fiver which shares 4 segments with Digit 6.
+  d6_segs <- d6_row$segs
+  d2_row <- fivers [map_lgl(fivers$segs,~ shared(., d6_segs) == 4 ),]
+  pp[pp$segs == d2_row$segs, 'digit' ] <- 2
+  
+  # Digit 5 is the last remaining digit
+  d5_row <- subset(pp, is.na(digit))
+  pp[pp$segs == d5_row$segs, 'digit' ] <- 5
+  
+  arrange(pp, digit)
+  
+}
+
+first <- get_mapped_patterns(patterns_list[[1]])
+
+
+#sixerssixers True segment assignments (for deducing the rules)
+ts <-  c( "cf", "acdeg", "acdfg", "bcdf", "abdfg", "abdefg", "acf",
+           "abcdef", "abcdfg", "abcefg" )
+
+i_uniques <- c(1, 4, 7, 8)
+i_fivers <- c(2, 3, 5)
+i_sixers <- c(6, 9, 10)
+
+# View matrix of shared seg lengths between two sets of digits.
+# pass the indices in ts of the segment pattern to cross
+view_shared <- function (i_row, i_col) {
+  m <- matrix(nrow=length(i_row), ncol=length(i_col))
+  colnames(m) <- i_col
+  rownames(m) <- i_row
+  for (i in seq_along(i_row) ) {
+    m[i, ] <- map_int(ts[i_col], ~ shared(.x, ts[i_row[i]]) )
+  }
+  m
+}
+view_shared(i_fivers, i_uniques)
+view_shared(i_sixers, i_uniques)
+view_shared( c(2,5), c(3, 6, 9, 10))

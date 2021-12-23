@@ -125,9 +125,8 @@ test_that("fuel for optimal alignment with increment sum metric", {
   expect_equal (fuel_for_optimal_alignment_incr( positions_data), 95167302) 
 })
 
-
 # ------------------------------------------------------------------------------
-# Day 8
+# Day 08
 test_digits_data <-  read_data("test-day08_digits.txt", fpath = testdata_folder) 
 digits_data <-  read_data("day08_digits.txt") 
 #digits_data <- read_data("day08_digits.txt")
@@ -136,3 +135,15 @@ test_that("count number of digits which have segment count 2, 3, 4 or 7", {
   expect_equal (count_digit_length_matches( test_digits_data), 26 ) 
   expect_equal (count_digit_length_matches( digits_data), 440 ) 
 })
+
+
+digits_raw <- test_digits_data
+
+test_that("get number of shared letters",{
+  expect_equal( shared("abc", "abd"), 2)
+  expect_equal( shared("abc", "def"), 0)
+  expect_equal( shared("abcgr", "bac"), 3)
+})
+
+# ------------------------------------------------------------------------------
+# Day 09
