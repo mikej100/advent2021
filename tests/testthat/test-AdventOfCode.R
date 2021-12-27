@@ -116,20 +116,24 @@ positions_data <- read_data("day07_crabs.txt")
 
 
 test_that("fuel for optimal alignment with l1 metric", {
-  expect_equal (fuel_for_optimal_alignment_l1( test_positions_data), 37) 
-  expect_equal (fuel_for_optimal_alignment_l1( positions_data), 336701) 
+  expect_equal (
+    fuel_for_optimal_alignment( test_positions_data, cost_model ="li"), 37) 
+  expect_equal (
+    fuel_for_optimal_alignment( positions_data, cost_model ="li"), 336701) 
 })
 
 test_that("fuel for optimal alignment with increment sum metric", {
-  expect_equal (fuel_for_optimal_alignment_incr( test_positions_data), 168 ) 
-  expect_equal (fuel_for_optimal_alignment_incr( positions_data), 95167302) 
+  expect_equal (
+    fuel_for_optimal_alignment( test_positions_data, cost_model="incr"), 168 ) 
+  expect_equal (
+    fuel_for_optimal_alignment( positions_data, cost_model="incr"), 95167302) 
 })
 
 # ------------------------------------------------------------------------------
 # Day 08
-test_digits_data <-  read_data("test-day08_digits.txt", fpath = testdata_folder) 
 digits_data <-  read_data("day08_digits.txt") 
-#digits_data <- read_data("day08_digits.txt")
+test_digits_data <-  read_data("test-day08_digits.txt", fpath = testdata_folder) 
+example_digits_data <-  "acedgfb cdfbe gcdfa fbcad dab cefabd cdfgeb eafb cagedb ab |cdfeb fcadb cdfeb cdbaf"
 
 test_that("count number of digits which have segment count 2, 3, 4 or 7", {
   expect_equal (count_digit_length_matches( test_digits_data), 26 ) 
@@ -137,12 +141,16 @@ test_that("count number of digits which have segment count 2, 3, 4 or 7", {
 })
 
 
-digits_raw <- test_digits_data
 
 test_that("get number of shared letters",{
   expect_equal( shared("abc", "abd"), 2)
   expect_equal( shared("abc", "def"), 0)
   expect_equal( shared("abcgr", "bac"), 3)
+})
+
+test_that("Decode segment patterns of set of digits data", {
+  expect_equal (get_readout_total( test_digits_data), 61229) 
+  expect_equal (get_readout_total( digits_data), 1046281) 
 })
 
 # ------------------------------------------------------------------------------

@@ -508,17 +508,45 @@ fuel_for_optimal_alignment <- function (position_data_raw, cost_model="l1") {
 # . .   .   . .  5 5 Last remaining digit
 #
 # Task 1
-count_digit_length_matches <- function(digits_raw) {
   # wrangle the data
+  # split unique pattersn from digit reads
+  # sort letter order for all patterns
+get_data1 <- function (digits_raw) {
   data1 <- digits_raw %>%
     str_split("\\|") %>%
     transpose()
   
-  digits<- unlist(data1[[2]])
+  unique_patterns <- data1[[1]] %>%
+    unlist() %>%
+    str_split(" ") %>%
+   map(~ map_chr(.x, ~ order_letters(.x)))
+ 
+  readout_patterns <- data1[[2]] %>%
+    unlist() %>%
+    str_split(" ") %>%
+    map( ~ map_chr(.x, ~ order_letters(.x))) %>%
+    map( ~ keep(.x, ~ str_length(.x) > 1) )
+  
+    data1 <- list(unique_patterns = unique_patterns, 
+                  readout_patterns = readout_patterns)
+}    
+
+order_letters <- function (word) {
+  word%>%
+    str_split("") %>%
+    unlist() %>%
+    sort() %>%
+    reduce(~ paste0(.x, .y), .init="")
+}
+count_digit_length_matches <- function(digits_raw) {
+  # wrangle the data
+  data1 <- get_data1(digits_raw) 
+  
+  digits<- data1$readout_patterns
+  
   
   # count number of string length matches
   digit_counts <- digits %>%
-    str_split(" " ) %>%
     map( ~ str_length(.)) %>%
     map( ~ . %in% c( 2, 4, 3, 7 )) %>%
     map( ~ sum(.) )
@@ -538,10 +566,6 @@ shared <- function (a, b) {
     map_lgl(~ . %in% bb) %>%
     sum()
 }
-
-patterns_list <- data1[[1]] %>%
-  str_split(" ")
-
 
 # Find the mapping of set of unique patterns to digits they represent.
 # Return data frame of patterns and the digit represented.
@@ -581,6 +605,19 @@ get_mapped_patterns <- function (patterns) {
   d6_row <- sixers [map_lgl(sixers$segs,~ shared(., d4_segs) == 4 ),]
   pp[pp$segs == d6_row$segs, 'digit' ] <- 9 
   
+  # Get pattern row by a givn number of shared segments in the digit pattern
+  # Returns the segment pattern(s) of the matching digit rows.
+  # uses pp from environment.
+  get_match_by_shared <- function (i_base, segs, n) {
+    base <- pp[i_base]
+    result <- base[ map_lgl( base$segs, ~ shared( .x, segs) == n), 'segs' ]
+  }
+  
+  #
+  set_digit_mapping <- function (data, segs, value) {
+    
+  }
+  
   # Digit 0 is the remaining sixer.
   d0_row <- subset(pp, len ==6 & is.na(digit))
   pp[pp$segs == d0_row$segs, 'digit' ] <- 0
@@ -598,10 +635,43 @@ get_mapped_patterns <- function (patterns) {
   
 }
 
-first <- get_mapped_patterns(patterns_list[[1]])
-
-
-#sixerssixers True segment assignments (for deducing the rules)
+# Dev area
+get_readout_total <- function (digits_data) { 
+  data1 <- get_data1(digits_data) 
+  
+  patterns <- data1$unique_patterns
+  mappings <- map( patterns, ~ get_mapped_patterns(.x) )
+  readouts <- data1$readout_patterns
+  
+  
+  
+  # get digit corresponding to segment pattern p in mapping table m.
+  # Return numeric value of one digit.
+  get_digit <- function( m, p) {
+    as.numeric( m[ m$segs == p, 'digit'])
+  }
+  
+  # get digit sequence corresponding to set of patterns in readout.
+  # Return vector of integers for the digits.
+  reading_digits <- function(m, reading) {
+    map_dbl(reading, ~ get_digit(m, .x))
+  }
+  
+  # get numeric value of digit sequence of patterns in readout for mapping m.
+  # Return double representing numeric value of the digits combined as number.
+  reading_value <- function (m, reading) {
+    reduce(reading_digits( m, reading), ~ 10 *.x + .y)
+  }
+  
+  # Convert the readouts to values using mappings from unique values and sum them.
+  # Returns integer representing the sum of readings.
+  readings_total <- map2(mappings, readouts, ~ reading_value(.x, .y)) %>%
+    unlist() %>%
+    sum()
+  
+}
+# Here are some lines of code used as tools to develop the solution.
+# True Segment assignments for deducing the rules, digits 1-9 and 0.
 ts <-  c( "cf", "acdeg", "acdfg", "bcdf", "abdfg", "abdefg", "acf",
            "abcdef", "abcdfg", "abcefg" )
 
@@ -620,6 +690,7 @@ view_shared <- function (i_row, i_col) {
   }
   m
 }
+# Look for ways to identify members of fivers and sixers by comparing to uniques.
 view_shared(i_fivers, i_uniques)
 view_shared(i_sixers, i_uniques)
 view_shared( c(2,5), c(3, 6, 9, 10))
