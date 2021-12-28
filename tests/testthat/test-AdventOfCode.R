@@ -4,6 +4,9 @@ library(testthat)
 # print(paste("After setwd working directory is ", getwd()))
 source("./R/AdventOfCode.R")
 testdata_folder <- file.path ("data","test_data")
+test_read_data <- function (fname) {
+  read_data( paste0("test-",fname), fpath = testdata_folder)
+}
 
 # Set test level, 1 shallow, deeper, etc.
 test_level <- 2
@@ -155,3 +158,13 @@ test_that("Decode segment patterns of set of digits data", {
 
 # ------------------------------------------------------------------------------
 # Day 09
+data_fname <- "day09_cave.txt"
+cave_data <-  read_data(data_fname) 
+test_cave_data <-  test_read_data(data_fname) 
+
+test_that("Day 09, test find low points and calculate risk level", {
+  expect_equal (get_risk_level_total( test_cave_data), 15) 
+  expect_equal (get_risk_level_total( cave_data), 526) 
+#  expect_equal (get_readout_total( digits_data), 1046281) 
+})
+

@@ -605,18 +605,6 @@ get_mapped_patterns <- function (patterns) {
   d6_row <- sixers [map_lgl(sixers$segs,~ shared(., d4_segs) == 4 ),]
   pp[pp$segs == d6_row$segs, 'digit' ] <- 9 
   
-  # Get pattern row by a givn number of shared segments in the digit pattern
-  # Returns the segment pattern(s) of the matching digit rows.
-  # uses pp from environment.
-  get_match_by_shared <- function (i_base, segs, n) {
-    base <- pp[i_base]
-    result <- base[ map_lgl( base$segs, ~ shared( .x, segs) == n), 'segs' ]
-  }
-  
-  #
-  set_digit_mapping <- function (data, segs, value) {
-    
-  }
   
   # Digit 0 is the remaining sixer.
   d0_row <- subset(pp, len ==6 & is.na(digit))
@@ -630,12 +618,28 @@ get_mapped_patterns <- function (patterns) {
   # Digit 5 is the last remaining digit
   d5_row <- subset(pp, is.na(digit))
   pp[pp$segs == d5_row$segs, 'digit' ] <- 5
+ 
+  # Incomplete code to make functions for the matching and setting of values. 
+  # Get pattern row by a givn number of shared segments in the digit pattern
+  # Returns the segment pattern(s) of the matching digit rows.
+  # uses pp from environment.
+  get_match_by_shared <- function (i_base, segs, n) {
+    base <- pp[i_base]
+    result <- base[ map_lgl( base$segs, ~ shared( .x, segs) == n), 'segs' ]
+  }
   
+  #
+  set_digit_mapping <- function (data, segs, value) {
+    
+  }
+  # end of imncomplete code.
+   
   arrange(pp, digit)
   
 }
 
-# Dev area
+# 
+# Main function for task 2
 get_readout_total <- function (digits_data) { 
   data1 <- get_data1(digits_data) 
   
@@ -643,21 +647,19 @@ get_readout_total <- function (digits_data) {
   mappings <- map( patterns, ~ get_mapped_patterns(.x) )
   readouts <- data1$readout_patterns
   
-  
-  
-  # get digit corresponding to segment pattern p in mapping table m.
+  # Get digit corresponding to segment pattern p in mapping table m.
   # Return numeric value of one digit.
   get_digit <- function( m, p) {
     as.numeric( m[ m$segs == p, 'digit'])
   }
   
-  # get digit sequence corresponding to set of patterns in readout.
+  # Get digit sequence corresponding to set of patterns in readout.
   # Return vector of integers for the digits.
   reading_digits <- function(m, reading) {
     map_dbl(reading, ~ get_digit(m, .x))
   }
   
-  # get numeric value of digit sequence of patterns in readout for mapping m.
+  # Get numeric value of digit sequence of patterns in readout for mapping m.
   # Return double representing numeric value of the digits combined as number.
   reading_value <- function (m, reading) {
     reduce(reading_digits( m, reading), ~ 10 *.x + .y)
@@ -694,3 +696,80 @@ view_shared <- function (i_row, i_col) {
 view_shared(i_fivers, i_uniques)
 view_shared(i_sixers, i_uniques)
 view_shared( c(2,5), c(3, 6, 9, 10))
+
+# ------------------------------------------------------------------------------
+# Day 09
+# 
+# Task 1
+
+# Load hight data into matrix .
+wrangle_cave_data <- function (cave_data_raw) {
+  
+  ncol <- str_length(cave_data_raw[1])
+  nrow <- length(cave_data_raw)
+  
+  heights <- cave_data_raw %>%
+    map( ~ str_split(.x, "")) %>%
+    unlist() %>%
+    as.numeric() %>%
+    matrix(ncol = ncol,
+           nrow = nrow,
+           byrow = TRUE)
+}
+
+
+# get values of matrix m elements up, down, left and right; or 10 if on border
+up <- function(m, irow, icol) {
+ifelse (irow == 1,   10,   m[irow-1, icol])
+}
+
+down <- function (m, irow, icol){
+ifelse (irow == nrow(m),   10,   m[irow+1, icol])
+}
+
+left <- function (m, irow, icol) {
+ifelse (icol == 1,   10,   m[irow, icol-1])
+}
+
+right <- function (m, irow, icol) {
+ifelse (icol == ncol(m),   10,   m[irow, icol+1])
+}
+
+# Get values of matrix m elements up, down, right and left of location irow,icol.
+# Returns double vector  length 4.
+neighbours <- function (m, irow, icol) {
+  invoke_map_dbl(list(up, down, left, right), 
+               list(list(m, irow, icol)))
+}
+get_risk_level_total <- function (cave_data_raw) {
+  heights <- wrangle_cave_data(cave_data_raw)
+  m <- heights
+  
+  risk_level_total <- 0
+  for (irow in seq_along(m[, 1])) {
+    for (icol in seq_along(m[1,])) {
+      log_trace ("Checking matrix element m[{irow},{icol}]")
+      if (every(neighbours(m, irow, icol), ~ .x > m[irow, icol])) {
+        log_trace (" found dip at m[{irow},{icol}]")
+        risk_level_total <- risk_level_total + m[irow, icol] + 1
+      }
+      if (every(neighbours(m, irow, icol), ~ .x >= m[irow, icol]) &
+          !every(neighbours(m, irow, icol), ~ .x > m[irow, icol])) {
+        log_trace (" found gulley at m[{irow},{icol}]")
+      }
+    }
+  }
+  
+  # Alternative using imap for loops is, I think, more cumbersome.i
+  #iwalk(heights[, 1], ~  {
+  #  irow <- .y
+  #  iwalk(heights[1, ], ~ {
+  #    icol <- .y
+  #    cat("\n element", heights[irow, icol])
+  #  })
+  #})
+  risk_level_total
+}
+    
+
+
