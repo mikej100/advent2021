@@ -1,6 +1,6 @@
 library(testthat)
 # print(paste("From test-AdventOfCode.R working directory is ", getwd()))
-# setwd("../../")
+ setwd("../../")
 # print(paste("After setwd working directory is ", getwd()))
 source("./R/AdventOfCode.R")
 testdata_folder <- file.path ("data","test_data")
@@ -10,7 +10,7 @@ test_read_data <- function (fname) {
 
 # Set test level, 1 shallow, deeper, etc.
 test_level <- 2
-log_threshold(INFO, index = 2)
+log_threshold(INFO, index = 1)
 # Day 1 ------------------------------------------------------------------------
 test_depth = c(199, 200, 208, 210, 200, 207, 240, 269, 260,263)
 test_that("Depth calculations for 1 Dec task 1", {
@@ -128,6 +128,7 @@ test_that("fuel for optimal alignment with l1 metric", {
 test_that("fuel for optimal alignment with increment sum metric", {
   expect_equal (
     fuel_for_optimal_alignment( test_positions_data, cost_model="incr"), 168 ) 
+  skip_if (test_level < 2)
   expect_equal (
     fuel_for_optimal_alignment( positions_data, cost_model="incr"), 95167302) 
 })
@@ -153,6 +154,7 @@ test_that("get number of shared letters",{
 
 test_that("Decode segment patterns of set of digits data", {
   expect_equal (get_readout_total( test_digits_data), 61229) 
+  skip_if (test_level < 2)
   expect_equal (get_readout_total( digits_data), 1046281) 
 })
 
@@ -165,6 +167,47 @@ test_cave_data <-  test_read_data(data_fname)
 test_that("Day 09, test find low points and calculate risk level", {
   expect_equal (get_risk_level_total( test_cave_data), 15) 
   expect_equal (get_risk_level_total( cave_data), 526) 
-#  expect_equal (get_readout_total( digits_data), 1046281) 
+  
+})
+test_that("Day 09, find basins and get product of size of three largest", {
+  expect_equal (get_basins( test_cave_data), 1134) 
+  skip_if (test_level < 2)
+  expect_equal (get_basins( cave_data), 1123524) 
 })
 
+
+
+# ------------------------------------------------------------------------------
+# Day 10
+data_fname <- "day10_navchunks.txt"
+navchunk_data <-  read_data(data_fname) 
+test_navchunk_data <-  test_read_data(data_fname) 
+
+test_that("detect unbalanced closer in navchunk string", {
+  expect_equal( get_bad_closer("[{(<>)}]"), "" )
+  expect_equal( get_bad_closer("[{(<>)]}"), "]" )
+  expect_equal( get_bad_closer("[{(aaa<>)}bbbb]"), "" )
+})
+
+
+test_that("Day 10", {
+  expect_equal (get_bad_closer_score( test_navchunk_data), 26397) 
+  skip_if (test_level < 2)
+  expect_equal (get_bad_closer_score( navchunk_data), 26397) 
+})
+
+# Tests for delimiter balancing solution which is not used to solve this task.
+test_that("regex patterns for balanced pairs and singletons", {
+          expect_equal( re(bracket_p, "abc]a[ab"), c("]","[") )
+          expect_equal( re(bracket_bal_p, "abc[123]la[ab"), "[123]" )
+          expect_equal( re(bracket_bal_p, "abc[123]la[ab["), "[123]" )
+          expect_equal( bracket_is_bal( "abc[123]def"), T)
+          expect_equal( bracket_is_bal( "abc[123]d[ef"), F)
+          
+          expect_equal( re(brace_bal_p, "abc{123}la[ab"), "{123}" )
+          expect_equal( brace_is_bal( "abc{123}la[ab"), T)
+          
+          expect_equal( parenth_is_bal( "abc(123)la[a(b"), F)
+          
+          expect_equal( gtlt_is_bal( "abc<123<la[a(b"), F)
+})

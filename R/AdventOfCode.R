@@ -73,7 +73,7 @@ position_product2 <- function (x) {
       filter (direction == "forward") %>%
       mutate (z_change =  amount * aim) 
     
-  x <- sum(df2$amount)
+  x <-sum(df2$amount)
     z <- sum(df2$z_change)
   pp <- x * -z
 }
@@ -702,7 +702,7 @@ view_shared( c(2,5), c(3, 6, 9, 10))
 # 
 # Task 1
 
-# Load hight data into matrix .
+# Load height data into matrix .
 wrangle_cave_data <- function (cave_data_raw) {
   
   ncol <- str_length(cave_data_raw[1])
@@ -717,49 +717,51 @@ wrangle_cave_data <- function (cave_data_raw) {
            byrow = TRUE)
 }
 
-
 # get values of matrix m elements up, down, left and right; or 10 if on border
-up <- function(m, irow, icol) {
-ifelse (irow == 1,   10,   m[irow-1, icol])
+# focus is (row, column) pair.
+up <- function(m, focus) {
+ifelse (focus[1] == 1,   10,   m[focus[1] - 1, focus[2]])
 }
 
-down <- function (m, irow, icol){
-ifelse (irow == nrow(m),   10,   m[irow+1, icol])
+down <- function (m, focus){
+ifelse (focus[1] == nrow(m),   10,   m[focus[1] + 1, focus[2]])
 }
 
-left <- function (m, irow, icol) {
-ifelse (icol == 1,   10,   m[irow, icol-1])
+left <- function (m, focus) {
+ifelse (focus[2] == 1,   10,   m[focus[1], focus[2] - 1])
 }
 
-right <- function (m, irow, icol) {
-ifelse (icol == ncol(m),   10,   m[irow, icol+1])
+right <- function (m, focus) {
+ifelse (focus[2] == ncol(m),   10,   m[focus[1], focus[2] + 1])
 }
 
 # Get values of matrix m elements up, down, right and left of location irow,icol.
 # Returns double vector  length 4.
-neighbours <- function (m, irow, icol) {
+neighbours <- function (m, focus) {
   invoke_map_dbl(list(up, down, left, right), 
-               list(list(m, irow, icol)))
+               list(list(m, focus)))
 }
+
+# Main section for task 1. Find dips where all elements avove and below are 
+# greater than the value of the given cell. Add one to that value and sum for
+# all dips.
 get_risk_level_total <- function (cave_data_raw) {
-  heights <- wrangle_cave_data(cave_data_raw)
-  m <- heights
+  m <- wrangle_cave_data(cave_data_raw)
   
   risk_level_total <- 0
   for (irow in seq_along(m[, 1])) {
     for (icol in seq_along(m[1,])) {
-      log_trace ("Checking matrix element m[{irow},{icol}]")
-      if (every(neighbours(m, irow, icol), ~ .x > m[irow, icol])) {
+      if (every(neighbours(m, c(irow, icol)), ~ .x > m[irow, icol])) {
         log_trace (" found dip at m[{irow},{icol}]")
         risk_level_total <- risk_level_total + m[irow, icol] + 1
       }
-      if (every(neighbours(m, irow, icol), ~ .x >= m[irow, icol]) &
-          !every(neighbours(m, irow, icol), ~ .x > m[irow, icol])) {
+      if (every(neighbours(m, c(irow, icol)), ~ .x >= m[irow, icol]) &
+          !every(neighbours(m, c(irow, icol)), ~ .x > m[irow, icol])) {
         log_trace (" found gulley at m[{irow},{icol}]")
       }
     }
   }
-  
+
   # Alternative using imap for loops is, I think, more cumbersome.i
   #iwalk(heights[, 1], ~  {
   #  irow <- .y
@@ -771,5 +773,199 @@ get_risk_level_total <- function (cave_data_raw) {
   risk_level_total
 }
     
+# Find a basin which contains element given by element in position (i,j).
+# returns basin index or integer(0) if not found
+which_basin <- function (basins, i, j) {
+  result <- detect_index(basins, ~ list( as.integer( c(i,j)) ) %in% .x)
+}
+
+val <- function(m, i, j) {
+  result <- m[i,j]
+}
+
+# Add location (i,j) to basins[[b1]]
+# Returns modified basins
+add_to_basin <- function(basins, b1, i, j) {
+  if (length(basins) < b1 ) {
+    # Start new basin.
+   basins <- append( basins, list(list( c(i,j)) ) ) 
+  } else {
+    # Append to existing basin.
+    basins[[b1]] <- append( basins[[b1]], list(c(i,j) ) )
+  }
+  basins
+}
+    
+
+# Merge basin basin[[b2]] into basins[[b1]], but only if they are different.
+# Returns updated basins.
+merge_basins <- function (basins, b1, b2) {
+  if (b1 == b2) {
+    # skip if they are the same.
+  } else {
+    basins[[b1]] <- append(basins[[b1]], basins[[b2]])
+    basins[[b2]] <- NULL
+  }
+  basins
+}
+
+# Main function for task 09.2
+# Find all basins in cave data
+# Return the product of the size of the three largest basins.
+get_basins <- function (cave_data_raw) {
+  m <- wrangle_cave_data(cave_data_raw)
+  
+  basins <- list()
+  for (irow in 1:nrow(m)) {
+    log_trace ("Processing task 9.2 row {irow}")
+    for (icol in 1:ncol(m)) {
+      if (val(m, irow, icol) < 9) {
+        # check if adding to basin of cell to left.
+        i_basin <- which_basin(basins,  irow, icol - 1)
+        if (i_basin == 0) {
+          i_basin <- length(basins) + 1
+        }
+        basins <- add_to_basin(basins, i_basin, irow, icol)
+        
+        # check if add current basin to basin of cell up
+        up_basin <- which_basin(basins, irow - 1, icol)
+        if (up_basin > 0)
+          basins <- merge_basins(basins, up_basin, i_basin)
+      }
+    }
+  } #end of row
+  
+  prod_top_three_basins <- basins %>%
+    map( ~ length(.x)) %>%
+    unlist() %>%
+    sort () %>%
+    tail (3) %>%
+    reduce( ~ .x * .y)
+  
+}
 
 
+# Day 10------------------------------------------------------------------------
+# 
+# Task 1
+
+# Test character to see if is an opening delimiter, return T/F.
+is_opener <- function(c) {
+ str_detect(c, "[\\[\\{\\(<]")
+}
+
+# Test character to see if is a closing delimiter, return T/F.
+is_closer <- function(c) {
+ str_detect(c, "[\\]\\}\\)>]")
+}
+
+# Test if delimiters are matching pair, return T/F.
+is_balanced <- function (opener, closer) {
+  paste0(opener,closer) %in% list("[]", "{}", "()", "<>") 
+}
+
+# Run through string to see if delimiters open and close in legal sequence.
+# Returns value of bad closing delimiter, or empty string if all good.
+# Stack is loose term, as we are pushing and popping off the end.
+get_bad_closer <- function (line) {
+  bad_closer <- ""
+  stack <- vector()
+  chars <- unlist(str_split(line, ""))
+  
+  for (c in chars) {
+    if (is_opener(c))  {
+      stack <- append(stack, c)
+    }
+    
+    if (is_closer(c)) {
+      if (length(stack) < 1) {
+        bad_closer <- c
+      } else {
+        last <- tail(stack, 1)
+        stack <- head(stack,-1)
+        if (!is_balanced (last, c)) {
+          bad_closer <- c
+        }
+      }
+    }
+    if ( str_length(bad_closer) > 0) {
+      break
+    } # end of if closer
+  }  # end for
+  bad_closer
+}
+
+# Return penalty score a particular bad closing delimiter.
+closer_score <- function(closer) {
+  switch ( (str_locate( ")]}>", fixed(closer))[[1]] ), 
+           3, 57, 1197, 25137)
+}
+# Main code for day 10 task 1.
+# Calculate total syntax error score for errors in navigation chunks in navchunk
+# Find the bad closer delimiters in each line of navchunk data, 
+# lookup score for that delimiter and sum them.
+# Returns dbl of  the sum value.
+get_bad_closer_score <- function (navchunk_data) {
+  map_chr(navchunk_data, ~ get_bad_closer(.x) ) %>%
+   keep(~ str_length(.x) > 0) %>%
+    map_dbl(~ closer_score(.x)) %>%
+    sum()
+}
+
+# Using regexes to find matching delimiters in string.-------------------------
+# Code below is not used to solve the task.
+# This code was developed an exercise with using regexes for balanced
+# delimeters. It workds, but does not solve the task at hand. It is retained
+# for as a learning exercise for future use.
+# see https://www.regular-expressions.info/recurse.html#balanced
+# TODO  change this to allow recursion without alternation.
+
+# Set up regex patterns to find balanced pairs, and singles.
+bal_patt <- function (beginning, middle, end) {
+  result <- paste0(beginning,"(?:", middle, "|(?R))*", end)
+#  result <- paste0(beginning, "(?R)*",  end, "|", middle)
+}
+bracket_bal_p <- bal_patt("\\[", "[^\\[\\]]", "]")
+bracket_p <- "[\\[\\]]"
+brace_bal_p <- bal_patt("\\{", "[^\\{\\}]", "\\}")
+
+brace_p <- "[\\{}]"
+parenth_bal_p <- bal_patt("\\(", "[^\\(\\)]", "\\)")
+parenth_p <- "[\\(\\)]"
+gtlt_bal_p <- bal_patt("<", "[^<>]", ">")
+gtlt_p <- "[<>]"
+
+# Helper for dev and test, show the matches
+re <- function(p, x) {
+  unlist( regmatches(x, gregexpr(p, x, perl=TRUE)) )
+}  
+
+# helper substition used to strip paired delimiters from string
+strip_bal <- function (p, x) {
+  gsub(p, "", x, perl=TRUE)
+}
+
+
+bracket_is_bal <- function (x) {
+  stripped <- strip_bal(bracket_bal_p, x)
+  result <- ! grepl(bracket_p, stripped, perl=T)
+}
+brace_is_bal <- function (x) {
+  stripped <- strip_bal(brace_bal_p, x)
+  result <- ! grepl(brace_p, stripped, perl=T)
+}
+parenth_is_bal <- function (x) {
+  stripped <- strip_bal(parenth_bal_p, x)
+  result <- ! grepl(parenth_p, stripped, perl=T)
+}
+gtlt_is_bal <- function (x) {
+  stripped <- strip_bal(gtlt_bal_p, x)
+  result <- ! grepl(gtlt_p, stripped, perl=T)
+}
+
+d <- "put test data here"
+are_bal <- list(bracket_is_bal, brace_is_bal, parenth_is_bal, gtlt_is_bal )
+# Main function to test whether all strings in d have complete set of
+# matching pairs.
+# Unfortunately, this is not the required analysis, as chunks can be incomplete.
+aa <-  map(d, ~ ( invoke_map_lgl(are_bal, .x)) )
