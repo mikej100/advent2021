@@ -9,7 +9,7 @@ test_read_data <- function (fname) {
 }
 
 # Set test level, 1 shallow, deeper, etc.
-test_level <- 2
+test_level <- 1
 log_threshold(INFO, index = 1)
 # Day 1 ------------------------------------------------------------------------
 test_depth = c(199, 200, 208, 210, 200, 207, 240, 269, 260,263)
@@ -177,8 +177,8 @@ test_that("Day 09, find basins and get product of size of three largest", {
 
 
 
-# ------------------------------------------------------------------------------
-# Day 10
+# Day 10-----------------------------------------------------------------------
+# 
 data_fname <- "day10_navchunks.txt"
 navchunk_data <-  read_data(data_fname) 
 test_navchunk_data <-  test_read_data(data_fname) 
@@ -190,10 +190,14 @@ test_that("detect unbalanced closer in navchunk string", {
 })
 
 
+test_navchunk_results <- get_navchunk_results(test_navchunk_data)
+if (! test_level < 2) {
+  navchunk_results <- get_navchunk_results(navchunk_data)
+}
 test_that("Day 10", {
-  expect_equal (get_bad_closer_score( test_navchunk_data), 26397) 
+  expect_equal (get_bad_closer_score(test_navchunk_results), 26397) 
   skip_if (test_level < 2)
-  expect_equal (get_bad_closer_score( navchunk_data), 26397) 
+  expect_equal (get_bad_closer_score( navchunk_results), 392043) 
 })
 
 # Tests for delimiter balancing solution which is not used to solve this task.

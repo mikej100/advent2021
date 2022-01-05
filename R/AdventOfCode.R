@@ -864,6 +864,15 @@ is_balanced <- function (opener, closer) {
   paste0(opener,closer) %in% list("[]", "{}", "()", "<>") 
 }
 
+generate_closers <- function(stack) {
+  openers <- c("[","{", "(", "<")
+  closers <- c("]", "}", ")", ">")
+  matched_closer <- function (delimiter) {
+    result <- closers[ detect_index( openers, ~ .== delimiter)]
+  } 
+  map_chr(rev(stack), ~ matched_closer(.x) )
+}
+
 # Run through string to see if delimiters open and close in legal sequence.
 # Returns value of bad closing delimiter, or empty string if all good.
 # Stack is loose term, as we are pushing and popping off the end.
@@ -895,6 +904,42 @@ get_bad_closer <- function (line) {
   bad_closer
 }
 
+get_closers <- function (line) {
+  bad_closer <- ""
+  good_closers <- ""
+  stack <- vector()
+  chars <- unlist(str_split(line, ""))
+  
+  for (c in chars) {
+    if (is_opener(c))  {
+      stack <- append(stack, c)
+    }
+    
+    if (is_closer(c)) {
+      if (length(stack) < 1) {
+        bad_closer <- c
+      } else {
+        last <- tail(stack, 1)
+        stack <- head(stack,-1)
+        if (!is_balanced (last, c)) {
+          bad_closer <- c
+        }
+      }
+    }
+    if ( str_length(bad_closer) > 0) {
+      break
+    } # end of if closer
+  }  # end for
+  
+  # No bad closers if get to this code, complete with required closes.
+  if (length(stack) > 0 ) {
+    good_closers <- generate_closers(stack)
+  }
+    # reverse complementary closers
+    # devise way to signal good or bad closers
+  result <- list(bad_closer=bad_closer, good_closers=good_closers)
+}
+
 # Return penalty score a particular bad closing delimiter.
 closer_score <- function(closer) {
   switch ( (str_locate( ")]}>", fixed(closer))[[1]] ), 
@@ -905,12 +950,22 @@ closer_score <- function(closer) {
 # Find the bad closer delimiters in each line of navchunk data, 
 # lookup score for that delimiter and sum them.
 # Returns dbl of  the sum value.
-get_bad_closer_score <- function (navchunk_data) {
-  map_chr(navchunk_data, ~ get_bad_closer(.x) ) %>%
+get_navchunk_results <- function (navchunk_data) {
+  map(navchunk_data, ~ get_closers(.x) )
+}
+
+
+get_bad_closer_score <- function (navchunk_results) {
+  map_chr(navchunk_results, ~ .x$bad_closer) %>%
    keep(~ str_length(.x) > 0) %>%
     map_dbl(~ closer_score(.x)) %>%
     sum()
 }
+
+
+
+
+
 
 # Using regexes to find matching delimiters in string.-------------------------
 # Code below is not used to solve the task.
