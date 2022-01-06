@@ -3,7 +3,7 @@ library(testthat)
  setwd("../../")
 # print(paste("After setwd working directory is ", getwd()))
 source("./R/AdventOfCode.R")
-testdata_folder <- file.path ("data","test_data")
+testdata_folder <- file.path ("./data","test_data")
 test_read_data <- function (fname) {
   read_data( paste0("test-",fname), fpath = testdata_folder)
 }
@@ -184,9 +184,9 @@ navchunk_data <-  read_data(data_fname)
 test_navchunk_data <-  test_read_data(data_fname) 
 
 test_that("detect unbalanced closer in navchunk string", {
-  expect_equal( get_bad_closer("[{(<>)}]"), "" )
-  expect_equal( get_bad_closer("[{(<>)]}"), "]" )
-  expect_equal( get_bad_closer("[{(aaa<>)}bbbb]"), "" )
+  expect_equal( get_navchunk_results("[{(<>)}]")[[1]]$bad_closer, "" )
+  expect_equal( get_navchunk_results("[{(<>)]}")[[1]]$bad_closer, "]" )
+  expect_equal( get_navchunk_results("[{(aaa<>)}bbbb]")[[1]]$bad_closer, "" )
 })
 
 
@@ -194,10 +194,17 @@ test_navchunk_results <- get_navchunk_results(test_navchunk_data)
 if (! test_level < 2) {
   navchunk_results <- get_navchunk_results(navchunk_data)
 }
+
 test_that("Day 10", {
   expect_equal (get_bad_closer_score(test_navchunk_results), 26397) 
   skip_if (test_level < 2)
   expect_equal (get_bad_closer_score( navchunk_results), 392043) 
+})
+
+test_that("Day 10", {
+  expect_equal (get_autocomplete_score(test_navchunk_results),288957) 
+  skip_if (test_level < 2)
+  expect_equal (get_autocomplete_score(navchunk_results),1605968119) 
 })
 
 # Tests for delimiter balancing solution which is not used to solve this task.

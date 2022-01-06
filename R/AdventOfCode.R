@@ -13,8 +13,8 @@ data_folder <- file.path("data")
 read_data <- function ( fname, fpath = data_folder) 
    read_lines(file.path(fpath, fname) ) 
 
-#   ----------------------------------------------------------------------------
-# Day 1
+# Day 01-----------------------------------------------------------------------
+#
 depth <- as.numeric(read_data("20211201_depths.txt"))
 increases_count <- function(x) sum (diff(x) >0)
 
@@ -26,8 +26,8 @@ increases3_count <- function(x) sum(diff(window3(x)) >0)
 
 answer1_2 <- increases3_count(depth)
 
-#   ----------------------------------------------------------------------------
-# Day 2
+# Day 02---------------------------------------------------------------------
+# 
 course_data <- (read_data("20211202_course.txt"))
 
 # transform raw course data to a dataframe.
@@ -79,8 +79,7 @@ position_product2 <- function (x) {
 }
 answer2_2 <- position_product2(course_data)
 
-#   ----------------------------------------------------------------------------
-# Day 03, task 1
+# Day 03-----------------------------------------------------------------------
 
 diag_raw <- read_data("day03_diagnostics.txt")
 
@@ -160,8 +159,7 @@ get_life_support <- function (diag_raw) {
 }
 
 answer3_2 <- get_life_support(diag_raw)
-# ------------------------------------------------------------------------------
-# Day 4
+# Day 04-----------------------------------------------------------------------
 #
 # check boards contain numbers in range 0:99
 # for each numberdraw
@@ -302,8 +300,7 @@ get_bingo_score <- function (bingo_raw, last = FALSE) {
 # answer4_1 <- get_bingo_score(bingo_data)
 # answer4_2 <- get_bingo_score(bingo_data, first_not_last = FALSE)
 
-# ------------------------------------------------------------------------------
-# Day 5
+# Day 05-----------------------------------------------------------------------
 
 # Set up functions to extract x and y coordinates from raw data line.
 get_match <- function (txt, pattern) {
@@ -388,8 +385,7 @@ get_busy_coord_count <- function (vents_raw, mode = "vh" ) {
 }
 
 
-# ------------------------------------------------------------------------------
-# Day 6
+# Day 06----------------------------------------------------------------------
 # 
 # Logic
 # Operations on each day
@@ -440,8 +436,7 @@ total_fish_after_n_days <- function(f_data, n) {
   sum( age_n_days( fish, n) )
 }
 
-# ------------------------------------------------------------------------------
-# Day 7
+# Day 07------------------------------------------------------------------------
 # 
 # Logic
 # let a be candidate alignment position
@@ -478,8 +473,7 @@ fuel_for_optimal_alignment <- function (position_data_raw, cost_model="l1") {
 }
 
 
-# ------------------------------------------------------------------------------
-# Day 8
+# Day 08------------------------------------------------------------------------
 # 
 # Task 1
 # numbers with unique number of segments
@@ -874,35 +868,12 @@ generate_closers <- function(stack) {
 }
 
 # Run through string to see if delimiters open and close in legal sequence.
-# Returns value of bad closing delimiter, or empty string if all good.
-# Stack is loose term, as we are pushing and popping off the end.
-get_bad_closer <- function (line) {
-  bad_closer <- ""
-  stack <- vector()
-  chars <- unlist(str_split(line, ""))
-  
-  for (c in chars) {
-    if (is_opener(c))  {
-      stack <- append(stack, c)
-    }
-    
-    if (is_closer(c)) {
-      if (length(stack) < 1) {
-        bad_closer <- c
-      } else {
-        last <- tail(stack, 1)
-        stack <- head(stack,-1)
-        if (!is_balanced (last, c)) {
-          bad_closer <- c
-        }
-      }
-    }
-    if ( str_length(bad_closer) > 0) {
-      break
-    } # end of if closer
-  }  # end for
-  bad_closer
-}
+# Returns list of two values: bad closer, and vector of good closers.
+# If a bad closer is found, that closing delimeter is returned as bad_closer, or
+# empty string.
+# For all cases, generates the correct set fo closing vectors to balance 
+# unclosed openers as good_closers.
+
 
 get_closers <- function (line) {
   bad_closer <- ""
@@ -941,20 +912,29 @@ get_closers <- function (line) {
 }
 
 # Return penalty score a particular bad closing delimiter.
+# Closer is vector of closing delimiters.
+# Returns total of closing delimiter scores.
 closer_score <- function(closer) {
   switch ( (str_locate( ")]}>", fixed(closer))[[1]] ), 
            3, 57, 1197, 25137)
 }
-# Main code for day 10 task 1.
-# Calculate total syntax error score for errors in navigation chunks in navchunk
-# Find the bad closer delimiters in each line of navchunk data, 
-# lookup score for that delimiter and sum them.
-# Returns dbl of  the sum value.
+# Return total penalty score for collection of bad closing delimiters
+closers_score <- function(closers) {
+  map_dbl(closers, ~ closer_score(.x)) %>%
+    sum()
+}
+
+# Process raw navchunk data to find good and bad closers.
 get_navchunk_results <- function (navchunk_data) {
   map(navchunk_data, ~ get_closers(.x) )
 }
 
 
+# Main code for day 10 task 1.
+# Calculate total syntax error score for errors in navigation chunks in navchunk
+# Find the bad closer delimiters in each line of navchunk data, 
+# lookup score for that delimiter and sum them.
+# Returns dbl of  the sum value.
 get_bad_closer_score <- function (navchunk_results) {
   map_chr(navchunk_results, ~ .x$bad_closer) %>%
    keep(~ str_length(.x) > 0) %>%
@@ -962,9 +942,30 @@ get_bad_closer_score <- function (navchunk_results) {
     sum()
 }
 
+# Day 10 task 2 ----------------------------------------------------------------
+#
+# Automatic correction task has its own scoring values for closers.
+auto_closer_value <- function(closer) {
+  switch ( (str_locate( ")]}>", fixed(closer))[[1]] ), 
+           1, 2, 3, 4)
+}
+# Return total penalty score for list of closers. 
+auto_closers_score <- function(closers) {
+  reduce(closers, ~ 5*.x + auto_closer_value(.y), .init=0) 
+}
 
-
-
+# Main code fro Day 10 task 2.
+# From the processed results remove lines with bad closers, find scores for
+# remaining good closures and return value of the middle-sized score.
+get_autocomplete_score <- function (navchunk_results) {
+  closers <- 
+    keep(navchunk_results, ~ str_length(.x$bad_closer) ==0) %>%
+    map( ~ .x$good_closers)
+  scores <- map_dbl (closers, ~ auto_closers_score(.x))
+  ordered_scores <- scores[order(scores)]
+  mid_score <- ordered_scores[[length(ordered_scores) %/% 2 + 1]]
+  
+}
 
 
 # Using regexes to find matching delimiters in string.-------------------------
@@ -1018,9 +1019,9 @@ gtlt_is_bal <- function (x) {
   result <- ! grepl(gtlt_p, stripped, perl=T)
 }
 
-d <- "put test data here"
+delimited_text <- "put test data here"
 are_bal <- list(bracket_is_bal, brace_is_bal, parenth_is_bal, gtlt_is_bal )
 # Main function to test whether all strings in d have complete set of
 # matching pairs.
 # Unfortunately, this is not the required analysis, as chunks can be incomplete.
-aa <-  map(d, ~ ( invoke_map_lgl(are_bal, .x)) )
+aa <-  map(delimited_text, ~ ( invoke_map_lgl(are_bal, .x)) )
