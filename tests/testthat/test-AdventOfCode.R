@@ -184,9 +184,9 @@ navchunk_data <-  read_data(data_fname)
 test_navchunk_data <-  test_read_data(data_fname) 
 
 test_that("detect unbalanced closer in navchunk string", {
-  expect_equal( get_navchunk_results("[{(<>)}]")[[1]]$bad_closer, "" )
-  expect_equal( get_navchunk_results("[{(<>)]}")[[1]]$bad_closer, "]" )
-  expect_equal( get_navchunk_results("[{(aaa<>)}bbbb]")[[1]]$bad_closer, "" )
+  expect_equal( get_bad_closer("[{(<>)}]"), "" )
+  expect_equal( get_bad_closer("[{(<>)]}"), "]" )
+  expect_equal( get_bad_closer("[{(aaa<>)}bbbb]"), "" )
 })
 
 
@@ -194,17 +194,10 @@ test_navchunk_results <- get_navchunk_results(test_navchunk_data)
 if (! test_level < 2) {
   navchunk_results <- get_navchunk_results(navchunk_data)
 }
-
 test_that("Day 10", {
   expect_equal (get_bad_closer_score(test_navchunk_results), 26397) 
   skip_if (test_level < 2)
   expect_equal (get_bad_closer_score( navchunk_results), 392043) 
-})
-
-test_that("Day 10", {
-  expect_equal (get_autocomplete_score(test_navchunk_results),288957) 
-  skip_if (test_level < 2)
-  expect_equal (get_autocomplete_score(navchunk_results),1605968119) 
 })
 
 # Tests for delimiter balancing solution which is not used to solve this task.
@@ -221,4 +214,14 @@ test_that("regex patterns for balanced pairs and singletons", {
           expect_equal( parenth_is_bal( "abc(123)la[a(b"), F)
           
           expect_equal( gtlt_is_bal( "abc<123<la[a(b"), F)
+})
+# Day 11-----------------------------------------------------------------------
+# 
+data_fname <- "day11_octopus.txt"
+octopus_data <-  read_data(data_fname) 
+test_octopus_data <-  test_read_data(data_fname) 
+
+test_that("Does biolumiscent steps to give right total flash count", {
+  expect_equal( get_flash_count( test_octopus_data ), 1656 )
+  expect_equal( get_flash_count( octopus_data ), 1667 )
 })

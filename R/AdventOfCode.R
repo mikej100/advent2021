@@ -1025,3 +1025,111 @@ are_bal <- list(bracket_is_bal, brace_is_bal, parenth_is_bal, gtlt_is_bal )
 # matching pairs.
 # Unfortunately, this is not the required analysis, as chunks can be incomplete.
 aa <-  map(delimited_text, ~ ( invoke_map_lgl(are_bal, .x)) )
+
+
+# Day 11 -----------------------------------------------------------------------
+#
+
+
+wrangle_octopus_data <- function (octopus_data_raw) {
+  
+  ncol <- str_length(octopus_data_raw[1])
+  nrow <- length(octopus_data_raw)
+  
+  octopodes <- octopus_data_raw %>%
+    map( ~ str_split(.x, "")) %>%
+    unlist() %>%
+    as.numeric() %>%
+    matrix(ncol = ncol,
+           nrow = nrow,
+           byrow = TRUE)
+}
+
+
+# if i, j are in the octopus matrix, add one with ceiling of 9
+# return modified matrix.
+incr_oct <- function (os, i, j) {
+  if ( i > 0 & i <= nrow(os)  & j > 0 & j <= ncol(os) ) {
+    os[i, j] <-  os[i,j] + 1
+  }
+  os
+}
+
+# Increment all neighbours of octopos o in matrix of octopudes os
+# flash_neighbours <- fuction (os, i, j) {
+# Return new os matrix.
+
+flash_neighbs <- function (os, irow, jcol) {
+  offsets <- cross2(-1:1, -1:1 )[-5]
+  for ( i in seq_along(offsets) )  {
+    os <- incr_oct (os, irow + offsets[[i]][[1]], jcol + offsets[[i]][[2]])
+  }
+  os[irow,jcol] <-  99
+  # log_info("flashing neighbs {irow}, {jcol}")
+  os
+}
+# An octopus is due to flash if its value is greater than nine and also
+# less then the high value which is used to mark octupus which have flashed 
+# in this step.
+# Return boolean.
+is_flash_value <- function (val) {
+  result <-  val > 9 && val <99 
+}
+ 
+# Flash all octopus in os matrix which have the appropriate value.
+# return new os matrix.
+flash_os <- function (os) {
+  row_indices <- unlist(map(1:nrow(os), ~ rep(., ncol(os))))
+  col_indices <- rep(1:ncol(os), nrow(os))
+  result <- reduce2( row_indices, col_indices, .init = os,
+                      function(os, i, j) {
+       if (is_flash_value( os[i,j]) ) {
+        os <- flash_neighbs (os, i, j)
+       }
+      os
+      })
+  return(result)
+}
+
+# Original version of flash_os, with for loops. Which is better?
+flash_os_orig <- function (os) {
+  for (i in 1:nrow(os)) {
+    for (j in 1:ncol(os)) {
+      if (is_flash_value( os[i, j] ) )  {
+        os <- flash_neighbs (os, i, j)
+      }
+    }
+  }
+  os
+}
+
+# Set elements in matrix os which are greater than or equal to 99 to value 0.
+set_ge99_to_0 <- function (os, x) {
+  map_dbl( os, ~ if_else (. >= 99, 0, .)) %>%
+    matrix( ncol= ncol(os), nrow= nrow(os) )
+}
+
+# Do one  bioluminesence step.
+# do flash for all elegible octopus, and keep going whilst new elegible flashers
+# are generated. Then set flashed octopus to value zero.
+one_step <- function (os) {
+  os <- os + 1
+   while ( some( os, ~ is_flash_value(.) ) ) {
+    os <- flash_os(os)
+  }
+  os <- set_ge99_to_0 (os)
+}
+
+# Main function for Day 11 task 1
+# generate all the intermeidate octopus energy livel matrices
+# and sum the number of flashes.
+# Return number of flashes.
+get_flash_count <- function (raw_octopus_data) {
+  octopodes <- wrangle_octopus_data(raw_octopus_data)
+  steps <- accumulate(1:100, ~ one_step(.x), .init = octopodes)
+  flash_count <- reduce(steps, ~ .x + length(.y[.y == 0]), .init = 0)
+}
+
+
+
+  
