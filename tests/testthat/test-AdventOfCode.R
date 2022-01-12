@@ -184,9 +184,9 @@ navchunk_data <-  read_data(data_fname)
 test_navchunk_data <-  test_read_data(data_fname) 
 
 test_that("detect unbalanced closer in navchunk string", {
-  expect_equal( get_bad_closer("[{(<>)}]"), "" )
-  expect_equal( get_bad_closer("[{(<>)]}"), "]" )
-  expect_equal( get_bad_closer("[{(aaa<>)}bbbb]"), "" )
+  expect_equal( get_closers("[{(<>)}]")$bad_closer, "" )
+  expect_equal( get_closers("[{(<>)]}")$bad_closer, "]" )
+  expect_equal( get_closers("[{(aaa<>)}bbbb]")$bad_closer, "" )
 })
 
 
@@ -224,4 +224,10 @@ test_octopus_data <-  test_read_data(data_fname)
 test_that("Does biolumiscent steps to give right total flash count", {
   expect_equal( get_flash_count( test_octopus_data ), 1656 )
   expect_equal( get_flash_count( octopus_data ), 1667 )
+})
+
+test_that("Does biolumiscent steps to reach synchronous flash", {
+  expect_equal( get_steps_to_sync( test_octopus_data ), 195 )
+  expect_equal( get_steps_to_sync( octopus_data ), 488 )
+#  expect_equal( get_flash_count( octopus_data ), 1667 )
 })

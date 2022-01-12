@@ -1130,6 +1130,41 @@ get_flash_count <- function (raw_octopus_data) {
   flash_count <- reduce(steps, ~ .x + length(.y[.y == 0]), .init = 0)
 }
 
+# Helper functions for task 2.
 
+# Test whether all elements of matrix are value zero.
+# Return boolean.
+is_all_sync <- function (os) {
+  every(os, ~ . == 0)
+}
+
+# Do one octopus flashing step and flag to caller if all flashed in sync.
+step_to_sync <- function (os) {
+  os <- one_step(os)
+  if (is_all_sync(os)) {
+    result <- done(os)
+  } else{
+    result <- os
+  }
+  return( result )
+}
+
+# Day 11 task 2 main function.
+# Find number of steps to reach syncrhony.
+# Return count of steps, or zero if not reached within loop limit set in code.
+# Terminate the accumulate loop when all in sync by wrapping result in done().
+get_steps_to_sync <- function (raw_octopus_data) {
+  octopodes <- wrangle_octopus_data(raw_octopus_data)
+  
+  steps <- accumulate(1:10000, .init=octopodes, ~ { step_to_sync(.x)  })
+
+  if (is_all_sync( tail(steps) ) ) {
+    result <- length(steps) - 1
+  } else {
+    log_error("get_steps_to_sync error, failed to reach sync within step limit.")
+    result <- integer(0)
+  }
+  return( result)
+}
 
   
