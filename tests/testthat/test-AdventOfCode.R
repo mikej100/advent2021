@@ -231,3 +231,18 @@ test_that("Does biolumiscent steps to reach synchronous flash", {
   expect_equal( get_steps_to_sync( octopus_data ), 488 )
 #  expect_equal( get_flash_count( octopus_data ), 1667 )
 })
+
+# Day 12-----------------------------------------------------------------------
+# 
+data_fname <- "day12_caves.txt"
+ex1_data_fname <- "ex1-day12_caves.txt"
+ex2_data_fname <- "ex2-day12_caves.txt"
+ex1_cavelink_data <-  test_read_data(ex1_data_fname) 
+ex2_cavelink_data <-  test_read_data(ex2_data_fname) 
+cavelink_data <-  read_data(data_fname) 
+
+test_that("Does biolumiscent steps to give right total flash count", {
+  expect_equal( get_cave_paths_count( ex1_cavelink_data ), 10 )
+  expect_equal( get_cave_paths_count( ex2_cavelink_data ), 19 )
+  expect_equal( get_cave_paths_count( cavelink_data ), 226 )
+})

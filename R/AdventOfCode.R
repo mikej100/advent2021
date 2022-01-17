@@ -18,18 +18,12 @@ read_data <- function ( fname, fpath = data_folder)
 depth <- as.numeric(read_data("20211201_depths.txt"))
 increases_count <- function(x) sum (diff(x) >0)
 
-answer1_1 <- increases_count(depth)
-
 # Day 01, task 2
 window3 <- function (x) tail( x + lag(x) + lag(x, 2) , -2)
 increases3_count <- function(x) sum(diff(window3(x)) >0)
 
-answer1_2 <- increases3_count(depth)
-
 # Day 02---------------------------------------------------------------------
 # 
-course_data <- (read_data("20211202_course.txt"))
-
 # transform raw course data to a dataframe.
 course_data_to_df <- function (x) {
   course <- x %>% 
@@ -55,8 +49,6 @@ position_product1 <- function (x) {
   x <- move[ move$direction == "forward", ]$`sum(amount)`
   pp <- x * -z
 }
-answer2_1 <- position_product1(course_data)
-
 
 # Calculate position using rules according to task 2.
 position_product2 <- function (x) {
@@ -77,11 +69,8 @@ position_product2 <- function (x) {
     z <- sum(df2$z_change)
   pp <- x * -z
 }
-answer2_2 <- position_product2(course_data)
 
 # Day 03-----------------------------------------------------------------------
-
-diag_raw <- read_data("day03_diagnostics.txt")
 
 # convert boolean vector representing binary number to decimal.
 bool_to_dec <- function (x) {
@@ -114,8 +103,6 @@ power_from_diag <- function (diag_raw) {
   epsilon <- bool_to_dec(!gamma_bool)
   power <- gamma * epsilon
 }
-
-answer3_1 <- power_from_diag(diag_raw)
 
 
 # Calculate life support rating from raw diagnostic data following task instrucitons.
@@ -158,7 +145,6 @@ get_life_support <- function (diag_raw) {
   life_support_rating <- oxygen_generator_rating * co2_scrubber_rating
 }
 
-answer3_2 <- get_life_support(diag_raw)
 # Day 04-----------------------------------------------------------------------
 #
 # check boards contain numbers in range 0:99
@@ -1104,7 +1090,8 @@ flash_os <- function (os) {
   return(result)
   }
 
-# Original version of flash_os, with for loops. Which is better?
+# Original version of flash_os, with for loops. Really, this is clearer than
+# reduce version.
 flash_os_orig <- function (os) {
   for (i in 1:nrow(os)) {
     for (j in 1:ncol(os)) {
@@ -1127,7 +1114,7 @@ set_ge99_to_0 <- function (os, x) {
 # are generated. Then set flashed octopus to value zero.
 one_step <- function (os) {
   os <- os + 1
-  os <- reduce(1:10000, .init=os, ~ flash_os(.x))
+  os <- reduce(1:1000, .init=os, ~ flash_os(.x))
   os <- set_ge99_to_0 (os)
 }
 
@@ -1187,3 +1174,85 @@ get_steps_to_sync <- function (raw_octopus_data) {
 }
 
   
+
+
+# Day 12 -----------------------------------------------------------------------
+#
+#
+wrangle_links <- function(raw_cavelink_data) {
+  raw_cavelink_data|>
+  str_split("-") |>
+  transpose() |>
+  simplify_all()|>
+  as_tibble(.name_repair= \(x) c("from", "to"))
+}
+
+
+# Return list of links from this node
+node_links <- function(links, node) {
+  append(
+    filter(links, from == node) |> select(to) |> unlist(),
+    filter(links, to == node) |> select(from) |> unlist()
+  ) 
+}
+
+
+
+try_link <- function( links, next_node, path, good_paths) {
+  log_path <- reduce(path, paste, sep="-")
+  log_debug("try_link, next_node: {next_node}, path: {log_path}")
+  if  (str_detect(next_node, "^end$")  ) {
+    path <- append(path, next_node)
+    
+    log_path <- reduce(path, paste, sep="-")
+    log_debug("good path: {log_path}")
+    good_paths <- append(good_paths, list(path))
+  } else if ( ! (str_detect(next_node, "[a-z]+") && next_node %in% path )) {
+    # path <- append(path, next_node)
+    good_paths <-  try_node(links, next_node, path, good_paths)
+  } else {
+    #do nothing.
+  }
+  return(good_paths)
+}
+  
+try_node <- function (links, node, path, good_paths) {
+  path <- append(path, node)
+  node_links <- node_links(links, node)
+  log_path <- reduce(path, paste, sep="-")
+  log_links <- reduce(node_links, paste, sep=",")
+  log_debug("try_node, node: {node}, path: {log_path}, node_links: {log_links} ")
+  for (i in seq_along(node_links)) {
+    log_debug("node: {node} trying link: {node_links[i]}")
+    good_paths <-  try_link(links, node_links[i], path, good_paths)
+    
+  }
+#  reduce(node_links, ~ try_link( links, .x, path, good_paths))
+ 
+  return(good_paths) 
+}
+
+ln <- wrangle_links("start-end")
+ln <- wrangle_links(c("start-a", "a-end"))
+ln <- wrangle_links(c("start-a", "a-b", "b-end"))
+ln <- wrangle_links(c("start-a", "a-b", "a-end", "b-end"))
+ln <- wrangle_links(c("start-a", "a-b", "a-end", "b-end"))
+ln <- wrangle_links(ex1_cavelink_data)
+path <- list()
+good_paths <- list()
+# good_paths <- try_node (ln, "start", path, good_paths)
+
+get_paths <- function(raw_cavelink_data) {
+  path <- list()
+  good_paths <- list()
+  try_node(wrangle_links(raw_cavelink_data), "start", path, good_paths)
+}
+
+get_cave_paths_count <- function(raw_caveline_data) {
+  get_paths(raw_caveline_data) |> length()
+}
+
+count_paths_visiting_small_caves_once <- function(raw_cavelink_data) {
+  paths <- get_paths(raw_cavelink_data) 
+  aaa<-1
+}
