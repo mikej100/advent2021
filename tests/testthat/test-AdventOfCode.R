@@ -235,14 +235,18 @@ test_that("Does biolumiscent steps to reach synchronous flash", {
 # Day 12-----------------------------------------------------------------------
 # 
 data_fname <- "day12_caves.txt"
-ex1_data_fname <- "ex1-day12_caves.txt"
-ex2_data_fname <- "ex2-day12_caves.txt"
+ex1_data_fname <- "day12_caves-ex1.txt"
+ex2_data_fname <- "day12_caves-ex2.txt"
+ex3_data_fname <- "day12_caves-ex3.txt"
 ex1_cavelink_data <-  test_read_data(ex1_data_fname) 
 ex2_cavelink_data <-  test_read_data(ex2_data_fname) 
+ex3_cavelink_data <-  test_read_data(ex3_data_fname) 
 cavelink_data <-  read_data(data_fname) 
 
-test_that("Does biolumiscent steps to give right total flash count", {
+test_that("Find good paths though caves", {
   expect_equal( get_cave_paths_count( ex1_cavelink_data ), 10 )
   expect_equal( get_cave_paths_count( ex2_cavelink_data ), 19 )
-  expect_equal( get_cave_paths_count( cavelink_data ), 226 )
+  skip_if (test_level < 2)
+  expect_equal( get_cave_paths_count( ex3_cavelink_data ), 226 )
+  expect_equal( get_cave_paths_count( cavelink_data ), 3708 )
 })

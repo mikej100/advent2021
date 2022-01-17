@@ -1179,6 +1179,15 @@ get_steps_to_sync <- function (raw_octopus_data) {
 # Day 12 -----------------------------------------------------------------------
 #
 #
+# Assumptions of the data. These are not checked.
+# No adjacent large caves.think this would cause an infinte loop.
+# No mixed case cave names. This code would not reject mixed case.
+# Caves are either upper or lower case.
+#
+# Optimisation which could be done.
+# Process next links at start.  node_links() consumes 95% of the processing 
+# time as it is called in every recursion. The links can be extracted once and 
+# passed around in a fast to access form.
 wrangle_links <- function(raw_cavelink_data) {
   raw_cavelink_data|>
   str_split("-") |>
@@ -1187,16 +1196,16 @@ wrangle_links <- function(raw_cavelink_data) {
   as_tibble(.name_repair= \(x) c("from", "to"))
 }
 
-
 # Return list of links from this node
+# TODO change implemenation to do this once up front, rather than repeated
+# inside the recursion.
+
 node_links <- function(links, node) {
   append(
     filter(links, from == node) |> select(to) |> unlist(),
     filter(links, to == node) |> select(from) |> unlist()
   ) 
 }
-
-
 
 try_link <- function( links, next_node, path, good_paths) {
   log_path <- reduce(path, paste, sep="-")
@@ -1208,51 +1217,34 @@ try_link <- function( links, next_node, path, good_paths) {
     log_debug("good path: {log_path}")
     good_paths <- append(good_paths, list(path))
   } else if ( ! (str_detect(next_node, "[a-z]+") && next_node %in% path )) {
-    # path <- append(path, next_node)
-    good_paths <-  try_node(links, next_node, path, good_paths)
+    good_paths <-  do_node(links, next_node, path, good_paths)
   } else {
     #do nothing.
   }
   return(good_paths)
 }
   
-try_node <- function (links, node, path, good_paths) {
+do_node <- function (links, node, path, good_paths) {
   path <- append(path, node)
   node_links <- node_links(links, node)
   log_path <- reduce(path, paste, sep="-")
   log_links <- reduce(node_links, paste, sep=",")
-  log_debug("try_node, node: {node}, path: {log_path}, node_links: {log_links} ")
+  log_debug("do_node, node: {node}, path: {log_path}, node_links: {log_links} ")
   for (i in seq_along(node_links)) {
     log_debug("node: {node} trying link: {node_links[i]}")
     good_paths <-  try_link(links, node_links[i], path, good_paths)
-    
   }
-#  reduce(node_links, ~ try_link( links, .x, path, good_paths))
- 
   return(good_paths) 
 }
-
-ln <- wrangle_links("start-end")
-ln <- wrangle_links(c("start-a", "a-end"))
-ln <- wrangle_links(c("start-a", "a-b", "b-end"))
-ln <- wrangle_links(c("start-a", "a-b", "a-end", "b-end"))
-ln <- wrangle_links(c("start-a", "a-b", "a-end", "b-end"))
-ln <- wrangle_links(ex1_cavelink_data)
-path <- list()
-good_paths <- list()
-# good_paths <- try_node (ln, "start", path, good_paths)
 
 get_paths <- function(raw_cavelink_data) {
   path <- list()
   good_paths <- list()
-  try_node(wrangle_links(raw_cavelink_data), "start", path, good_paths)
+  do_node(wrangle_links(raw_cavelink_data), "start", path, good_paths)
 }
 
-get_cave_paths_count <- function(raw_caveline_data) {
-  get_paths(raw_caveline_data) |> length()
+get_cave_paths_count <- function(raw_cavelink_data) {
+  get_paths(raw_cavelink_data) |> 
+    length()
 }
 
-count_paths_visiting_small_caves_once <- function(raw_cavelink_data) {
-  paths <- get_paths(raw_cavelink_data) 
-  aaa<-1
-}
