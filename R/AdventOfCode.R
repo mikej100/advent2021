@@ -2,7 +2,6 @@ library(tidyverse)
 library(usethis)
 library(logger)
 
-t <- tempfile()
 log_appender(appender_file("./log/log.txt"), index = 2)
 # log_threshold(TRACE, index = 2)
 
@@ -1207,7 +1206,57 @@ node_links <- function(links, node) {
   ) 
 }
 
-try_link <- function( links, next_node, path, good_paths) {
+path_allowed_1 <- function (next_node, path) {
+   ! (str_detect(next_node, "[a-z]+") && next_node %in% path )
+}
+
+path_allowed_2 <- function (node, path) {
+  is_small <- function(node) str_detect(node, "[a-z]+")
+  
+  no_small_twice_in_path <- function (p) {
+     ! length(p[is_small(p)]) - length(unique(p[is_small(p)])) == 1
+  }
+  
+  not_in_path <- function(node, path) {
+    ! node %in% path
+  }
+  
+  is_start_or_end <- function(node)  str_detect(node, "(start|end)")
+  
+  # Here is the logic
+  if ( ! is_small(node) ) {
+    result <- TRUE
+  } else if (is_start_or_end(node) ) {
+    result <- FALSE
+  } else if (is_small(node) &&   not_in_path(node, path)) {
+    result <- TRUE
+  } else if (is_small(node) &&  no_small_twice_in_path(path) ){
+    result <- TRUE
+  } else {
+    FALSE
+  }
+}
+
+
+# p1 <- list("start", "a", "A", "b", "a", "A")
+# p2 <- list("start", "a", "A", "b", "c", "A")
+# is_small <- function(node) str_detect(node, "[a-z]+")
+# p[is_small(p )]|>  unique()|>length()
+# (length(p[is_small(p)]) - (p[is_small(p )]|>  unique()|>length()))>1
+       
+
+ 
+
+path_allowed <- function (rules, node, path) {
+  if ( str_detect(rules, fixed("rules_2")) ) {
+    f <- path_allowed_2
+} else {
+    f <- path_allowed_1
+}
+  f(node, path)
+} 
+
+try_link <- function( links, rules, next_node, path, good_paths) {
   log_path <- reduce(path, paste, sep="-")
   log_debug("try_link, next_node: {next_node}, path: {log_path}")
   if  (str_detect(next_node, "^end$")  ) {
@@ -1216,15 +1265,17 @@ try_link <- function( links, next_node, path, good_paths) {
     log_path <- reduce(path, paste, sep="-")
     log_debug("good path: {log_path}")
     good_paths <- append(good_paths, list(path))
-  } else if ( ! (str_detect(next_node, "[a-z]+") && next_node %in% path )) {
-    good_paths <-  do_node(links, next_node, path, good_paths)
+  } else if ( path_allowed( rules, next_node, path)) {
+    good_paths <-  do_node(links, rules, next_node, path, good_paths)
   } else {
     #do nothing.
   }
   return(good_paths)
 }
+
+
   
-do_node <- function (links, node, path, good_paths) {
+do_node <- function (links, rules, node, path, good_paths) {
   path <- append(path, node)
   node_links <- node_links(links, node)
   log_path <- reduce(path, paste, sep="-")
@@ -1232,19 +1283,19 @@ do_node <- function (links, node, path, good_paths) {
   log_debug("do_node, node: {node}, path: {log_path}, node_links: {log_links} ")
   for (i in seq_along(node_links)) {
     log_debug("node: {node} trying link: {node_links[i]}")
-    good_paths <-  try_link(links, node_links[i], path, good_paths)
+    good_paths <-  try_link(links, rules, node_links[i], path, good_paths)
   }
   return(good_paths) 
 }
 
-get_paths <- function(raw_cavelink_data) {
+get_paths <- function(raw_cavelink_data, rules) {
   path <- list()
   good_paths <- list()
-  do_node(wrangle_links(raw_cavelink_data), "start", path, good_paths)
+  paths <- do_node(wrangle_links(raw_cavelink_data), rules, "start", path, good_paths)
+  return(paths)
 }
 
-get_cave_paths_count <- function(raw_cavelink_data) {
-  get_paths(raw_cavelink_data) |> 
+get_cave_paths_count <- function(raw_cavelink_data, rules = "rules_1") {
+  get_paths(raw_cavelink_data, rules) |> 
     length()
 }
-

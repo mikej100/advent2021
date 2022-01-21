@@ -1,16 +1,16 @@
 library(testthat)
 # print(paste("From test-AdventOfCode.R working directory is ", getwd()))
- setwd("../../")
+setwd("../../")
 # print(paste("After setwd working directory is ", getwd()))
 source("./R/AdventOfCode.R")
-testdata_folder <- file.path ("./data","test_data")
+testdata_folder <- file.path ("data","test_data")
 test_read_data <- function (fname) {
   read_data( paste0("test-",fname), fpath = testdata_folder)
 }
 
 # Set test level, 1 shallow, deeper, etc.
-test_level <- 1
-log_threshold(INFO, index = 1)
+test_level <- 2
+log_threshold(INFO, index = 2)
 # Day 1 ------------------------------------------------------------------------
 test_depth = c(199, 200, 208, 210, 200, 207, 240, 269, 260,263)
 test_that("Depth calculations for 1 Dec task 1", {
@@ -128,7 +128,6 @@ test_that("fuel for optimal alignment with l1 metric", {
 test_that("fuel for optimal alignment with increment sum metric", {
   expect_equal (
     fuel_for_optimal_alignment( test_positions_data, cost_model="incr"), 168 ) 
-  skip_if (test_level < 2)
   expect_equal (
     fuel_for_optimal_alignment( positions_data, cost_model="incr"), 95167302) 
 })
@@ -154,7 +153,6 @@ test_that("get number of shared letters",{
 
 test_that("Decode segment patterns of set of digits data", {
   expect_equal (get_readout_total( test_digits_data), 61229) 
-  skip_if (test_level < 2)
   expect_equal (get_readout_total( digits_data), 1046281) 
 })
 
@@ -175,78 +173,3 @@ test_that("Day 09, find basins and get product of size of three largest", {
   expect_equal (get_basins( cave_data), 1123524) 
 })
 
-
-
-# Day 10-----------------------------------------------------------------------
-# 
-data_fname <- "day10_navchunks.txt"
-navchunk_data <-  read_data(data_fname) 
-test_navchunk_data <-  test_read_data(data_fname) 
-
-test_that("detect unbalanced closer in navchunk string", {
-  expect_equal( get_closers("[{(<>)}]")$bad_closer, "" )
-  expect_equal( get_closers("[{(<>)]}")$bad_closer, "]" )
-  expect_equal( get_closers("[{(aaa<>)}bbbb]")$bad_closer, "" )
-})
-
-
-test_navchunk_results <- get_navchunk_results(test_navchunk_data)
-if (! test_level < 2) {
-  navchunk_results <- get_navchunk_results(navchunk_data)
-}
-test_that("Day 10", {
-  expect_equal (get_bad_closer_score(test_navchunk_results), 26397) 
-  skip_if (test_level < 2)
-  expect_equal (get_bad_closer_score( navchunk_results), 392043) 
-})
-
-# Tests for delimiter balancing solution which is not used to solve this task.
-test_that("regex patterns for balanced pairs and singletons", {
-          expect_equal( re(bracket_p, "abc]a[ab"), c("]","[") )
-          expect_equal( re(bracket_bal_p, "abc[123]la[ab"), "[123]" )
-          expect_equal( re(bracket_bal_p, "abc[123]la[ab["), "[123]" )
-          expect_equal( bracket_is_bal( "abc[123]def"), T)
-          expect_equal( bracket_is_bal( "abc[123]d[ef"), F)
-          
-          expect_equal( re(brace_bal_p, "abc{123}la[ab"), "{123}" )
-          expect_equal( brace_is_bal( "abc{123}la[ab"), T)
-          
-          expect_equal( parenth_is_bal( "abc(123)la[a(b"), F)
-          
-          expect_equal( gtlt_is_bal( "abc<123<la[a(b"), F)
-})
-# Day 11-----------------------------------------------------------------------
-# 
-data_fname <- "day11_octopus.txt"
-octopus_data <-  read_data(data_fname) 
-test_octopus_data <-  test_read_data(data_fname) 
-
-test_that("Does biolumiscent steps to give right total flash count", {
-  expect_equal( get_flash_count( test_octopus_data ), 1656 )
-  expect_equal( get_flash_count( octopus_data ), 1667 )
-})
-
-test_that("Does biolumiscent steps to reach synchronous flash", {
-  expect_equal( get_steps_to_sync( test_octopus_data ), 195 )
-  expect_equal( get_steps_to_sync( octopus_data ), 488 )
-#  expect_equal( get_flash_count( octopus_data ), 1667 )
-})
-
-# Day 12-----------------------------------------------------------------------
-# 
-data_fname <- "day12_caves.txt"
-ex1_data_fname <- "day12_caves-ex1.txt"
-ex2_data_fname <- "day12_caves-ex2.txt"
-ex3_data_fname <- "day12_caves-ex3.txt"
-ex1_cavelink_data <-  test_read_data(ex1_data_fname) 
-ex2_cavelink_data <-  test_read_data(ex2_data_fname) 
-ex3_cavelink_data <-  test_read_data(ex3_data_fname) 
-cavelink_data <-  read_data(data_fname) 
-
-test_that("Find good paths though caves", {
-  expect_equal( get_cave_paths_count( ex1_cavelink_data ), 10 )
-  expect_equal( get_cave_paths_count( ex2_cavelink_data ), 19 )
-  skip_if (test_level < 2)
-  expect_equal( get_cave_paths_count( ex3_cavelink_data ), 226 )
-  expect_equal( get_cave_paths_count( cavelink_data ), 3708 )
-})
