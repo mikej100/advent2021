@@ -121,15 +121,26 @@ get_polymer_metric1 <- function (raw_polymer_data, steps=10) {
 polymer_data <- wrangle_polymer_data(test_day14_data)
 pr <- polymer_data$pair_rules
   
-#map2(names(pr), pr, ~  pair_list(.x, .y)  ) 
-  map2(names(pr), pr, ~ make_ins_row(pr, pair_list(.x, .y) ) ) |>
-  reduce(append) |>
-  matrix(ncol=length(pair_rules), byrow=TRUE)
+#map2(names(pr), pr, ~  pair_list(.x, .y)  )
 
+#' Make matrix which will perform the effect of insertions on the list of pairs.
+#' @param pr pair rules.
+#' @return logcial matrix with each row specifying the two new pairs produced
+#' by insertion rules.
+make_insertion_matrix <- function (pr) {
+map2(names(pr), pr, ~ make_ins_row(pr, pair_list(.x, .y))) |>
+  reduce(append) |>
+  matrix(
+    ncol = length(pair_rules),
+    byrow = TRUE,
+    dimnames = list(names(pr), names(pr))
+  )
+}
 pr<- pair_rules
-# Make matrix row for given pair of insertions using pair rules pr 
-#'@param pr pair rules  #'@param pair pair to insert 
-#'@return martix row for transformation matrix
+# Make matrix row for given pair of insertions using pair rules
+#'@param pr pair rules  
+#'@param pair pair to insert 
+#'@return matix row for transformation matrix
 make_ins_row <- function (pr, pair) {
   map_dbl( names(pr), ~ ifelse( .x %in% pair, 1, 0 ))
 }
@@ -137,3 +148,28 @@ make_ins_row <- function (pr, pair) {
 pair_list <- function (n, v) {
   list( paste0(substr(n,1,1),v), paste0(v, substr(n,2,2) ))
 }
+
+tp <- polymer_data$template
+
+template_pairs <-  map2(tp, lead(tp), ~ paste0(.x, .y)) |> head (-1 )
+initial_counts <-   map_dbl(names(pr), ~ ifelse(.x %in% template_pairs, 1,0 ))
+
+ins_m <- make_insertion_matrix(pr)
+
+pair_counts <- reduce( 1:10 , .init=initial_counts, ~ .x %*% ins_m) |>
+  set_names(names(pr))
+
+
+letters <-
+  imap(pair_counts, ~ list(c(substr(.y, 1, 1), .x), c(substr(.y, 2, 2), .x))) |>
+  flatten() |>
+  transpose()
+
+df_counts <-  tibble (let = letters[[1]], 
+                      count = as.numeric( letters[[2]]) ) |>
+  group_by(let)|>
+  summarise(total = sum(count)) |>
+  arrange(total)
+
+  
+most_minus_least_l <- tail(df_counts$total, 1) - head(df_counts$total, 1)
