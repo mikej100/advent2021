@@ -8,6 +8,9 @@ log_appender(appender_file("./log/log.txt"), index = 2)
 log_info("Starting AdventOfCode.R")
 log_trace("Starting AdventOfCode.R trace level")
 
+# data_folder <- file.path("data")
+# read_data <- function ( fname, fpath = data_folder) 
+#    read_lines(file.path(fpath, fname) ) 
 
 # Day 01-----------------------------------------------------------------------
 #
