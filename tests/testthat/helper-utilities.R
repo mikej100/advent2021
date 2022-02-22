@@ -1,3 +1,4 @@
+library(readr)
 library(testthat)
 library(logger)
 

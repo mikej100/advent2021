@@ -16,25 +16,24 @@ wrangle_polymer_data <- function(raw_data) {
     map(~ ( unlist(str_split( .x, fixed( " -> ") ) ) ) ) |>
     transpose()
   
-  #pairs2 <- map(pairs[[1]], pairs[[2]], ~ list(paste0(substr(x,1,1), y) paste0(substr(x,2,1),y)) )
   pair_rules <- pairs[[2]]
   names(pair_rules) <- pairs[[1]]
- 
    
   return (list(template=template, pair_rules = pair_rules))
 }
 
 # calculate letters to insert into template tp for lookup table lk
 insert <- function(tp, lk) {
-  log_info("Making insert, length {length(tp)}")
+  log_debug("Making insert, length {length(tp)}")
   
   map2(tp, lead(tp), ~ paste0( .x, .y ) ) |>
   map( ~ lk[[.x]]) |>
   unlist()
 }
 
+# Try to make faster version of insert.
 insert1 <- function(tp, lk) {
-  log_info("Making template, length {length(tp)}")
+  log_debug("Making template, length {length(tp)}")
   
   insert <- vector ("character", length(tp)-1)
   for (i in 1:length(tp)-1 ) {
@@ -43,28 +42,18 @@ insert1 <- function(tp, lk) {
     aa<-2
   }
   return(insert)
-  #map2(tp, lead(tp), ~ paste0( .x, .y ) ) |>
-  #map( ~ lk[[.x]]) |>
-  #unlist()
 }
 
 # zip template tp with insert letters as vector.
 zip <- function (tp, insert) {
- # reduce(seq_along(insert), .init=tp , \(x, i) append(x, insert[i], after=i*2-1))
   result<-  reduce2 ( tail(tp, -1), insert, .init=tp[1], \(c, t, i) c(c, i ,t))#
-  aa<-2
   return(result)
 }
   
+# Try to make faster version of zip.
 zip1 <- function (tp, insert) {
-  # new1 <- vector("character", length(tp) + length(insert))
   new1 <- vector("character", length(tp) + length(insert))
- # reduce(seq_along(insert), .init=tp , \(x, i) append(x, insert[i], after=i*2-1))
   
-  # reduce2 ( tail(tp, -1), insert, .init=tp[1], \(c, t, i) c(c, i ,t))#
-  
-  # new2 <- reduce(seq_along(tp), .init=new1, \(x,i) {x[(i*2-1)] <- tp[i]; x})
-  # new3 <- reduce(seq_along(insert), .init=new2, \(y,j) {y[j*2] <- insert[j]; y})
   new1[1] <- tp[1] 
   for (i in 1:length(insert)) {
     new1[i*2] <- insert[i]
@@ -78,13 +67,15 @@ zip1 <- function (tp, insert) {
 make_polymer <- function (tp, lk, n) {
   reduce(1:n, .init=tp, \(x, i) zip(x, insert(x, lk) ) )
 }
-# run the template n steps through the insert generation and zipping.
+# try to make faster version of make_polymer.
 make_polymer1 <- function (tp, lk, n) {
   reduce(1:n, .init=tp, \(x, i) zip1(x, insert(x, lk) ) )
 }
 
 get_polymer_metric <- function (raw_polymer_data, steps=10) {
-  log_info("get_polymer_metric, steps: {steps}")
+  log_info("Start get_polymer_metric, steps: {steps}")
+  log_start_time <- Sys.time()
+  
   polymer_data <- wrangle_polymer_data(raw_polymer_data)
   # lookup table for pair rules to insert value.
   lk <- polymer_data$pair_rules
@@ -92,7 +83,7 @@ get_polymer_metric <- function (raw_polymer_data, steps=10) {
   tp <- polymer_data$template
   
   logdata_polymer <- make_polymer(tp,lk,steps)|> reduce(~paste0(.x,.y))
-  log_info(" steps: {steps}, polymer {logdata_polymer}")
+  log_debug(" steps: {steps}, polymer {logdata_polymer}")
   
   e_counts <- make_polymer(tp, lk, steps) |>
      as_tibble(.name_repair="unique") |>
@@ -101,10 +92,15 @@ get_polymer_metric <- function (raw_polymer_data, steps=10) {
   
   most_minus_least_e <- tail(e_counts$n, 1) - head(e_counts$n, 1)
   
+  log_elapsed <- difftime(Sys.time(), log_start_time, units="secs")
+  log_info("Finish get_polymer_metric, steps: {steps}, elapsed: {log_elapsed}")
   return (most_minus_least_e)
 } 
 
 get_polymer_metric1 <- function (raw_polymer_data, steps=10) {
+  log_info("Start get_polymer_metric1, steps: {steps}")
+  log_start_time <- Sys.time()
+  
   polymer_data <- wrangle_polymer_data(raw_polymer_data)
   # lookup table for pair rules to insert value.
   lk <- polymer_data$pair_rules
@@ -116,8 +112,10 @@ get_polymer_metric1 <- function (raw_polymer_data, steps=10) {
     count(value) |>
     arrange(n)
   
-  
   most_minus_least_e <- tail(e_counts$n, 1) - head(e_counts$n, 1)
+  
+  log_elapsed <- difftime(Sys.time(), log_start_time, units="secs")
+  log_info("Finish get_polymer_metric1, steps: {steps}, elapsed: {log_elapsed}")
   
   return (most_minus_least_e)
 } 
@@ -181,7 +179,9 @@ get_initial_counts <- function (tp, pr) {
 }
 
 get_polymer_metric_fast <- function (raw_polymer_data, steps = 10) {
-  log_info("get_polymer_fast, steps: {steps}")
+  log_info("Start get_polymer_metric_fast, steps: {steps}")
+  log_start_time <- Sys.time()
+  
   polymer_data <- wrangle_polymer_data(raw_polymer_data)
   pr <- polymer_data$pair_rules
   tp <- polymer_data$template
@@ -204,7 +204,7 @@ get_polymer_metric_fast <- function (raw_polymer_data, steps = 10) {
     transpose()
   
   logdata_letters <-  tibble(count=letters[[2]]) |> filter(count>=1) 
-  log_info("steps: {steps}, letters: {logdata_letters}")
+  log_debug("steps: {steps}, letters: {logdata_letters}")
   
   df_counts <-  tibble (let = letters[[1]],
                         count = as.numeric(letters[[2]])) |>
@@ -215,9 +215,16 @@ get_polymer_metric_fast <- function (raw_polymer_data, steps = 10) {
   
   most_minus_least_l <-
     tail(df_counts$total, 1) - head(df_counts$total, 1)
+ 
+  log_elapsed <- difftime(Sys.time(), log_start_time, units="secs")
+  log_info("Finish get_polymer_metric_fast, steps: {steps}, time: {log_elapsed}")
   return (most_minus_least_l)
 }
 
+# Utility used to debug fast version of solution by looking for differences
+# between the intermidiate data generated in the slow and fast implementations.
+# In practice, this helped identify the error in the initial counts only found
+# in task 2.
 compare_polymer  <- function (raw_polymer_data, steps) {
   
   polymer_data <- wrangle_polymer_data(raw_polymer_data)
@@ -249,7 +256,7 @@ compare_polymer  <- function (raw_polymer_data, steps) {
   
   cf <- full_join(pps_df, pair_counts ) |>
     filter (n != fast_count)
-  #return(list(poly_slow, cf)  )
+  
   return(list(poly=reduce(poly_slow, ~paste0(.x,.y)), cf=cf, mat=ins_mat,
               tp=reduce(tp, ~paste0(.x, .y))  ))
   
