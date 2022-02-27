@@ -3,47 +3,14 @@ library(igraph)
 library(stringr)
 library(purrr)
 
-g3 <- make_lattice(length=3, dim=2)
-plot(g3)
-tkplot(g3, edge.label=E(g3)$id)
-plot(g3)
-E(g3)
-
-wel3 <- c(1,2,1,2,3,6,4,5,3,5,6,8,7,8,1,8,9,3,1,4,1,2,5,3,3,6,8,4,7,2,5,8,1,6,9,3)
-wm3<-matrix( wel3, ncol=3,  byrow=TRUE)
-wgm3 <- graph_from_edgelist(wm3[,1:2], directed=FALSE)
-plot(wgm3)
-E(wgm3)$weight <- wm3[,3]
-plot(wgm3, edge.width=(1/(E(wgm3)$weight)), edge.label=wm3[,3])
-
-shortest_paths(wgm3, from=1, to=9, output="both")
-
-el3 <-c(1,2,2,3,4,5,5,6,7,8,8,9,1,4,2,5,3,6,4,7,5,8,6,9)
-w3<-c(   1,  6,  3,  8,  1,  3,  1,  3,  8,  2,  1,  3)
-m3 <- matrix(el3, ncol=2, byrow = TRUE)
-gm3<-graph_from_edgelist(m3, directed = FALSE)
-E(gm3)$weight<-w3
-plot(gm3,  edge.label=E(gm3)$weight)
-shortest_paths(gm3, from=1, to=9, output="both")
-
-l3 <- make_lattice(length=3, dim=2)
-plot(l3)
-E(l3)
-
-g10 <- make_lattice(length=10, dim=2 )
-plot(g10)
-E(g10)
-
-raw_day15_data <-test_day15_data
-
-ncol <- str_length(raw_day15_data[1])
-wt_mat <-  raw_day15_data|>
-  map(~ str_split(.x, "")) |>
-  unlist() |>
-  as.numeric() |>
-  matrix(ncol = ncol, byrow=TRUE)
-wt_mat
-
+wrangle_chiton_data <- function (chiton_data) {
+  ncol <- str_length( chiton_data[1] )
+  chiton_data |>
+    map( ~ str_split(.x, "")) |>
+    unlist() |>
+    as.numeric() |>
+    matrix(ncol = ncol, byrow = TRUE)
+}
 # Assumes square matrix.
 row_m <- function (m, r) {
   dim <- dim(m)
@@ -53,25 +20,64 @@ row_m <- function (m, r) {
   return(row)
 }
 
-edge_wt <- function(m) {
+# Set up sequence of edge weights based on matrix m.
+# View E(m) to see order required.
+# Returns vector of weights in correct sequence to assign to lattice edges.
+edge_weights <- function(m) {
   dim <- dim(m)
-  wts <- map(1:(dim[1]-1), ~ row_m(m, .x)) |>
+  map(1:(dim[1]-1), ~ row_m(m, .x)) |>
     append ( m[dim[1],2:dim[2]] ) |>
     unlist()
-  return(wts)
 }
 
+find_shortest_path <- function (chiton_data) {
+  cost_matrix <- wrangle_chiton_data(chiton_data)
+  
+  # Set up the graph to solve, this is a lattice of dimensions of input data.
+  # Tested for square input data only.
+  ncol <- str_length(chiton_data[1])
+  chiton_graph  <- make_lattice(length = ncol,
+                                directed = TRUE,
+                                dim = 2)
+  
+  # As# sign the weights,
+  E(chiton_graph)$weight <- edge_weights(cost_matrix)
+  
+  # Vi# ew graph so can check.
+  # tkid <- tkplot(gr,
+  #                edge.label=E(gr)$weight,
+  #                vertex.color="light green",
+  #                layout=layout_as_tree(gr, root=ncol)
+  #                )
+  # tk_rotate(tkid, degree=30 )
+  
+  # Call iGraph function ot find shortest path (uses Dijkstra's).
+  path <-
+    shortest_paths(
+      chiton_graph,
+      from = 1,
+      to = ncol ^ 2,
+      output = "vpath",
+      mode = "all"
+    )
+  # Extract vertices of path from shortest_paths result, remove starting position
+  # sum the corresponding weightings.
+  
+  
+  path_sum <- sum(t(cost_matrix) [path$vpath[[1]][-1]])
+  
+  
+  vp <- path$vpath[[1]]
+  sum1 <- sum(t(cost_matrix)[vp[2:(length(vp))]])
+ 
+  # Make a mark-up version to view best path
+  # path is shown by two digit numbers (10 added)
+  markup <- t(cost_matrix) |>
+    imap( ~ ifelse(.y %in% vp, .x + 10, .x)) |>
+    matrix(ncol = ncol, byrow = TRUE)
+  
+  cc <- 1
+}
 
- E(g10)$weight <- edge_wt(wt_mat)
-
-tkid <- tkplot(g10,
-               edge.label=E(g10)$weight,
-               vertex.color="light green",
-               layout=layout_as_tree(g10, root=10)
-               )
-tk_rotate(tkid, degree=30 )
-
-
-
-#get.edge.attribute(g10)
-shortest_paths(g10, from=1, to=100, output="both")
+aa <- find_shortest_path(test_day15_data)
+bb <- find_shortest_path(day15_data)
